@@ -51,25 +51,26 @@ import { ReportsView } from './components/reports/ReportsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { PINModal } from './components/PINModal';
 import { LoginModal } from './components/LoginModal';
+import { applyBrandTheme } from './utils/brandTheme';
 
 export default function App() {
   // Navigation active tab
   const [activeTab, setActiveTab] = useState<'POS' | 'MEMBERS' | 'EXPENSES' | 'DRAWER' | 'SALARY' | 'REPORTS' | 'SETTINGS'>('POS');
 
   // Active Store Account Email (e.g. thefahbarber@gmail.com)
-  const [accountEmail, setAccountEmail] = useState<string>(() => storage.getActiveAccountEmail());
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const [accountEmail, setAccountEmail] = useState<string | null>(() => storage.getActiveAccountEmail());
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(() => !storage.getActiveAccountEmail());
 
   // Application Data States (scoped by accountEmail and synced with Firestore real-time)
-  const [settings, setSettings] = useState<StoreSettings>(() => storage.getSettings(accountEmail));
-  const [barbers, setBarbers] = useState<Barber[]>(() => storage.getBarbers(accountEmail));
-  const [services, setServices] = useState<ServiceItem[]>(() => storage.getServices(accountEmail));
-  const [packageTemplates, setPackageTemplates] = useState<PackageTemplate[]>(() => storage.getPackages(accountEmail));
-  const [members, setMembers] = useState<Member[]>(() => storage.getMembers(accountEmail));
-  const [bills, setBills] = useState<Bill[]>(() => storage.getBills(accountEmail));
-  const [expenses, setExpenses] = useState<ReturnType<typeof storage.getExpenses>>(() => storage.getExpenses(accountEmail));
-  const [cashDrawer, setCashDrawer] = useState<CashDrawerSummary>(() => storage.getCashDrawer(accountEmail));
-  const [salarySlips, setSalarySlips] = useState<SalarySlip[]>(() => storage.getSalarySlips(accountEmail));
+  const [settings, setSettings] = useState<StoreSettings>(() => storage.getSettings(accountEmail || undefined));
+  const [barbers, setBarbers] = useState<Barber[]>(() => storage.getBarbers(accountEmail || undefined));
+  const [services, setServices] = useState<ServiceItem[]>(() => storage.getServices(accountEmail || undefined));
+  const [packageTemplates, setPackageTemplates] = useState<PackageTemplate[]>(() => storage.getPackages(accountEmail || undefined));
+  const [members, setMembers] = useState<Member[]>(() => storage.getMembers(accountEmail || undefined));
+  const [bills, setBills] = useState<Bill[]>(() => storage.getBills(accountEmail || undefined));
+  const [expenses, setExpenses] = useState<ReturnType<typeof storage.getExpenses>>(() => storage.getExpenses(accountEmail || undefined));
+  const [cashDrawer, setCashDrawer] = useState<CashDrawerSummary>(() => storage.getCashDrawer(accountEmail || undefined));
+  const [salarySlips, setSalarySlips] = useState<SalarySlip[]>(() => storage.getSalarySlips(accountEmail || undefined));
 
   // Cloud Sync Status Indicator
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
@@ -86,7 +87,19 @@ export default function App() {
   useEffect(() => {
     if (!accountEmail) return;
 
-    // Seed initial workspace for this store account if brand new
+    // Immediately reset and load local dataset for this account to prevent stale data flash
+    setSettings(storage.getSettings(accountEmail));
+    setBarbers(storage.getBarbers(accountEmail));
+    setServices(storage.getServices(accountEmail));
+    setPackageTemplates(storage.getPackages(accountEmail));
+    setMembers(storage.getMembers(accountEmail));
+    setBills(storage.getBills(accountEmail));
+    setExpenses(storage.getExpenses(accountEmail));
+    setCashDrawer(storage.getCashDrawer(accountEmail));
+    setSalarySlips(storage.getSalarySlips(accountEmail));
+    setActiveStaffId('');
+
+    // Seed initial workspace for this store account if brand new (clean state)
     seedInitialDataIfEmpty(accountEmail).catch(console.error);
 
     // Subscribe to real-time changes from Firestore for this specific account
@@ -157,6 +170,11 @@ export default function App() {
     };
   }, [accountEmail]);
 
+  // Apply Dynamic Brand Color & Header Styling to CSS Variables
+  useEffect(() => {
+    applyBrandTheme(settings.brandColor, settings.brandHeaderStyle || 'light');
+  }, [settings.brandColor, settings.brandHeaderStyle]);
+
   // Ensure active staff is valid when barbers update
   useEffect(() => {
     if (barbers.length > 0 && !barbers.some(b => b.id === activeStaffId)) {
@@ -186,6 +204,15 @@ export default function App() {
     setActiveTab('POS');
   };
 
+  // Explicit Logout Handler
+  const handleLogout = () => {
+    storage.logout();
+    setAccountEmail(null);
+    setIsLoginModalOpen(true);
+    setIsAuthenticatedAdmin(false);
+    setActiveStaffId('');
+  };
+
   // Tab switching with PIN protection
   const handleTabChange = (tab: string) => {
     const normalizedTab: typeof activeTab = 
@@ -213,23 +240,31 @@ export default function App() {
   // State mutations with cloud sync scoped by accountEmail
   const handleSaveSettings = (newSettings: StoreSettings) => {
     setSettings(newSettings);
-    storage.saveSettings(newSettings, accountEmail);
-    saveSettingsToFirestore(accountEmail, newSettings);
+    if (accountEmail) {
+      storage.saveSettings(newSettings, accountEmail);
+      saveSettingsToFirestore(accountEmail, newSettings);
+    }
   };
 
   const handleAddBill = (newBill: Bill) => {
     setBills((prev) => [newBill, ...prev]);
-    saveBillToFirestore(accountEmail, newBill);
+    if (accountEmail) {
+      saveBillToFirestore(accountEmail, newBill);
+    }
   };
 
   const handleUpdateBill = (updatedBill: Bill) => {
     setBills((prev) => prev.map((b) => (b.id === updatedBill.id ? updatedBill : b)));
-    saveBillToFirestore(accountEmail, updatedBill);
+    if (accountEmail) {
+      saveBillToFirestore(accountEmail, updatedBill);
+    }
   };
 
   const handleDeleteBill = (billId: string) => {
     setBills((prev) => prev.filter((b) => b.id !== billId));
-    deleteBillFromFirestore(accountEmail, billId);
+    if (accountEmail) {
+      deleteBillFromFirestore(accountEmail, billId);
+    }
   };
 
   const handleVoidBill = (billId: string, reason: string) => {
@@ -265,12 +300,16 @@ export default function App() {
       }
       return [member, ...prev];
     });
-    saveMemberToFirestore(accountEmail, member);
+    if (accountEmail) {
+      saveMemberToFirestore(accountEmail, member);
+    }
   };
 
   const handleDeleteMember = (memberId: string) => {
     setMembers((prev) => prev.filter((m) => m.id !== memberId));
-    deleteMemberFromFirestore(accountEmail, memberId);
+    if (accountEmail) {
+      deleteMemberFromFirestore(accountEmail, memberId);
+    }
   };
 
   const handleSaveExpense = (expense: typeof expenses[0]) => {
@@ -281,12 +320,16 @@ export default function App() {
       }
       return [expense, ...prev];
     });
-    saveExpenseToFirestore(accountEmail, expense);
+    if (accountEmail) {
+      saveExpenseToFirestore(accountEmail, expense);
+    }
   };
 
   const handleDeleteExpense = (expenseId: string) => {
     setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
-    deleteExpenseFromFirestore(accountEmail, expenseId);
+    if (accountEmail) {
+      deleteExpenseFromFirestore(accountEmail, expenseId);
+    }
   };
 
   const handleSaveBarber = (barber: Barber) => {
@@ -297,12 +340,16 @@ export default function App() {
       }
       return [...prev, barber];
     });
-    saveBarberToFirestore(accountEmail, barber);
+    if (accountEmail) {
+      saveBarberToFirestore(accountEmail, barber);
+    }
   };
 
   const handleDeleteBarber = (barberId: string) => {
     setBarbers((prev) => prev.filter((b) => b.id !== barberId));
-    deleteBarberFromFirestore(accountEmail, barberId);
+    if (accountEmail) {
+      deleteBarberFromFirestore(accountEmail, barberId);
+    }
   };
 
   const handleSaveService = (service: ServiceItem) => {
@@ -313,12 +360,16 @@ export default function App() {
       }
       return [...prev, service];
     });
-    saveServiceToFirestore(accountEmail, service);
+    if (accountEmail) {
+      saveServiceToFirestore(accountEmail, service);
+    }
   };
 
   const handleDeleteService = (serviceId: string) => {
     setServices((prev) => prev.filter((s) => s.id !== serviceId));
-    deleteServiceFromFirestore(accountEmail, serviceId);
+    if (accountEmail) {
+      deleteServiceFromFirestore(accountEmail, serviceId);
+    }
   };
 
   const handleUpdateServicesStock = (serviceId: string, deltaStock: number) => {
@@ -337,18 +388,24 @@ export default function App() {
       }
       return [...prev, pkg];
     });
-    savePackageToFirestore(accountEmail, pkg);
+    if (accountEmail) {
+      savePackageToFirestore(accountEmail, pkg);
+    }
   };
 
   const handleDeletePackageTemplate = (pkgId: string) => {
     setPackageTemplates((prev) => prev.filter((p) => p.id !== pkgId));
-    deletePackageFromFirestore(accountEmail, pkgId);
+    if (accountEmail) {
+      deletePackageFromFirestore(accountEmail, pkgId);
+    }
   };
 
   const handleUpdateCashDrawer = (newDrawer: CashDrawerSummary) => {
     setCashDrawer(newDrawer);
-    storage.saveCashDrawer(newDrawer, accountEmail);
-    saveCashDrawerToFirestore(accountEmail, newDrawer);
+    if (accountEmail) {
+      storage.saveCashDrawer(newDrawer, accountEmail);
+      saveCashDrawerToFirestore(accountEmail, newDrawer);
+    }
   };
 
   const handleSaveSalarySlip = (slip: SalarySlip) => {
@@ -359,11 +416,14 @@ export default function App() {
       }
       return [slip, ...prev];
     });
-    saveSalarySlipToFirestore(accountEmail, slip);
+    if (accountEmail) {
+      saveSalarySlipToFirestore(accountEmail, slip);
+    }
   };
 
   // Factory Reset for the CURRENT STORE (100% complete wipe of all data)
   const handleResetFactoryData = () => {
+    if (!accountEmail) return;
     storage.resetDemoData(accountEmail);
     const freshSettings: StoreSettings = {
       ...DEFAULT_SETTINGS,
@@ -406,6 +466,7 @@ export default function App() {
         isCloudConnected={isCloudConnected}
         currentAccountEmail={accountEmail}
         onSwitchAccount={() => setIsLoginModalOpen(true)}
+        onLogout={handleLogout}
         todaySalesTotal={bills.filter(b => b.status === 'COMPLETED' && b.date?.startsWith(new Date().toISOString().slice(0, 10))).reduce((sum, b) => sum + (b.grandTotal || 0), 0)}
       />
 
@@ -533,11 +594,13 @@ export default function App() {
 
       {/* Multi-Account Login / Switch Store Modal */}
       <LoginModal
-        isOpen={isLoginModalOpen}
-        currentEmail={accountEmail}
+        isOpen={!accountEmail || isLoginModalOpen}
+        currentEmail={accountEmail || ''}
         onLogin={handleLoginAccount}
-        onClose={() => setIsLoginModalOpen(false)}
-        canClose={true}
+        onClose={() => {
+          if (accountEmail) setIsLoginModalOpen(false);
+        }}
+        canClose={Boolean(accountEmail)}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Store, ArrowRight, ShieldCheck, Sparkles, Building2, Check, X, LogIn } from 'lucide-react';
 import { storage } from '../utils/storage';
 
@@ -21,6 +21,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
   const savedAccounts = storage.getSavedAccounts();
 
+  useEffect(() => {
+    setEmailInput(currentEmail || '');
+    setErrorMsg('');
+  }, [currentEmail, isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -32,7 +37,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
     // Basic email format check
     if (!trimmed.includes('@') || !trimmed.includes('.')) {
-      setErrorMsg('กรุณากรอกรูปแบบอีเมลให้ถูกต้อง เช่น yourshop@gmail.com');
+      setErrorMsg('กรุณากรอกรูปแบบอีเมลให้ถูกต้อง');
       return;
     }
 
@@ -93,7 +98,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   setEmailInput(e.target.value);
                   if (errorMsg) setErrorMsg('');
                 }}
-                placeholder="กรุณาระบุ Email ของท่าน (เช่น thefahbarber@gmail.com)"
+                placeholder="กรุณาระบุ Email ของท่าน"
                 className="w-full pl-10 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl text-sm font-semibold text-stone-900 placeholder:text-stone-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition"
                 autoFocus
               />

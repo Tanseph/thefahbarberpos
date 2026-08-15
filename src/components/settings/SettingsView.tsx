@@ -18,11 +18,14 @@ import {
   Image as ImageIcon,
   Percent,
   Sparkles,
-  Check
+  Check,
+  Palette,
+  Paintbrush
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { formatCurrency } from '../../utils/formatters';
+import { BRAND_COLOR_PRESETS, DEFAULT_BRAND_COLOR, applyBrandTheme } from '../../utils/brandTheme';
 
 interface SettingsViewProps {
   settings: StoreSettings;
@@ -518,6 +521,264 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </p>
           </div>
 
+          {/* 3. Brand Color Setting (ธีมสีประจำร้าน & CSS Variables) */}
+          <div className="space-y-4 bg-stone-50/70 border border-stone-200/80 rounded-2xl p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-stone-200/80">
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-8 h-8 rounded-xl flex items-center justify-center font-black shadow-xs"
+                  style={{
+                    backgroundColor: formData.brandColor || DEFAULT_BRAND_COLOR,
+                    color: '#ffffff',
+                  }}
+                >
+                  <Palette className="w-4 h-4" />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-stone-900 uppercase tracking-wide flex items-center gap-1.5">
+                    <span>3. ธีมสีประจำร้าน (Brand Color & Themes)</span>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  </label>
+                  <p className="text-[11px] text-stone-500">
+                    เลือกสีเอกลักษณ์ของร้านเพื่อปรับเปลี่ยน CSS Variables ของปุ่ม แถบ Header และส่วนประกอบหลักทั่วทั้งระบบ
+                  </p>
+                </div>
+              </div>
+
+              {/* Active Color Badge */}
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-stone-200 shadow-2xs">
+                <span 
+                  className="w-4 h-4 rounded-full shadow-xs shrink-0" 
+                  style={{ backgroundColor: formData.brandColor || DEFAULT_BRAND_COLOR }}
+                />
+                <span className="font-mono text-xs font-black text-stone-800 uppercase">
+                  {formData.brandColor || DEFAULT_BRAND_COLOR}
+                </span>
+              </div>
+            </div>
+
+            {/* Presets Grid */}
+            <div className="space-y-2">
+              <span className="text-[11px] font-black text-stone-600 block">
+                🎨 ชุดสียอดนิยมสำหรับร้านบาร์เบอร์และซาลอน (Preset Palettes):
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                {BRAND_COLOR_PRESETS.map((preset) => {
+                  const isSelected = (formData.brandColor || DEFAULT_BRAND_COLOR).toUpperCase() === preset.hex.toUpperCase();
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        const updated = { ...formData, brandColor: preset.hex };
+                        setFormData(updated);
+                        applyBrandTheme(preset.hex, formData.brandHeaderStyle || 'light');
+                      }}
+                      className={`p-2.5 rounded-2xl border text-left transition-all duration-150 cursor-pointer flex flex-col gap-2 relative active:scale-95 ${
+                        isSelected
+                          ? 'bg-white border-stone-900 shadow-md ring-2 ring-stone-900/10'
+                          : 'bg-white/80 hover:bg-white border-stone-200 hover:border-stone-300 shadow-2xs'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div
+                          className="w-7 h-7 rounded-xl shadow-xs flex items-center justify-center text-xs font-black shrink-0 transition-transform"
+                          style={{
+                            backgroundColor: preset.hex,
+                            color: '#ffffff',
+                          }}
+                        >
+                          {isSelected ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : preset.badgeEmoji}
+                        </div>
+                        {isSelected && (
+                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-stone-900 text-white uppercase">
+                            เลือกอยู่
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-stone-900 truncate">
+                          {preset.name}
+                        </div>
+                        <div className="font-mono text-[10px] text-stone-400 font-semibold">
+                          {preset.hex}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Hex Color Picker */}
+            <div className="bg-white border border-stone-200/80 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <input
+                    type="color"
+                    id="brand-color-picker"
+                    value={formData.brandColor || DEFAULT_BRAND_COLOR}
+                    onChange={(e) => {
+                      const color = e.target.value;
+                      const updated = { ...formData, brandColor: color };
+                      setFormData(updated);
+                      applyBrandTheme(color, formData.brandHeaderStyle || 'light');
+                    }}
+                    className="w-11 h-11 rounded-xl cursor-pointer border-2 border-stone-200 p-0.5 bg-white shadow-xs focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="brand-color-picker" className="text-xs font-black text-stone-800 flex items-center gap-1.5 cursor-pointer">
+                    <Paintbrush className="w-3.5 h-3.5 text-stone-500" />
+                    <span>เลือกสีกำหนดเอง (Custom HEX Color Picker)</span>
+                  </label>
+                  <p className="text-[11px] text-stone-400">
+                    คลิกเพื่อเปิดตารางจานสี หรือพิมพ์รหัสโค้ดสี HEX ที่ต้องการ
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-xs font-bold text-stone-400 font-mono">HEX:</span>
+                <input
+                  type="text"
+                  maxLength={7}
+                  value={formData.brandColor || DEFAULT_BRAND_COLOR}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (!val.startsWith('#')) val = '#' + val;
+                    const updated = { ...formData, brandColor: val };
+                    setFormData(updated);
+                    if (/^#[0-9A-F]{6}$/i.test(val)) {
+                      applyBrandTheme(val, formData.brandHeaderStyle || 'light');
+                    }
+                  }}
+                  className="w-28 bg-stone-50 border border-stone-300 focus:border-stone-900 rounded-xl px-3 py-2 text-xs font-mono font-black text-stone-900 uppercase focus:outline-none"
+                  placeholder="#D97706"
+                />
+              </div>
+            </div>
+
+            {/* Header Style Mode Selection */}
+            <div className="bg-white border border-stone-200/80 rounded-2xl p-3.5 space-y-2 shadow-2xs">
+              <span className="text-xs font-black text-stone-800 flex items-center gap-1.5">
+                <span>🖼️ สไตล์พื้นหลังแถบ Header ด้านบน (Header Styling):</span>
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated: StoreSettings = { ...formData, brandHeaderStyle: 'light' };
+                    setFormData(updated);
+                    applyBrandTheme(formData.brandColor, 'light');
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+                    (formData.brandHeaderStyle || 'light') === 'light'
+                      ? 'bg-stone-50 border-stone-900 ring-2 ring-stone-900/10 shadow-xs'
+                      : 'bg-white hover:bg-stone-50 border-stone-200'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-white border border-stone-300 shadow-2xs flex items-center justify-center text-xs">
+                    ☀️
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-black text-stone-900">
+                      พื้นหลังสีขาวโมเดิร์น (Clean Light with Brand Accent)
+                    </div>
+                    <div className="text-[10px] text-stone-500">
+                      แถบเมนูสีขาว สะอาดตา เน้นปุ่มและแท็บตามสีแบรนด์
+                    </div>
+                  </div>
+                  {(formData.brandHeaderStyle || 'light') === 'light' && (
+                    <Check className="w-4 h-4 text-stone-900 stroke-[3]" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated: StoreSettings = { ...formData, brandHeaderStyle: 'brand' };
+                    setFormData(updated);
+                    applyBrandTheme(formData.brandColor, 'brand');
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+                    formData.brandHeaderStyle === 'brand'
+                      ? 'bg-stone-50 border-stone-900 ring-2 ring-stone-900/10 shadow-xs'
+                      : 'bg-white hover:bg-stone-50 border-stone-200'
+                  }`}
+                >
+                  <div 
+                    className="w-8 h-8 rounded-lg shadow-2xs flex items-center justify-center text-xs text-white"
+                    style={{ backgroundColor: formData.brandColor || DEFAULT_BRAND_COLOR }}
+                  >
+                    👑
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-black text-stone-900">
+                      พื้นหลังสีแบรนด์เต็มรูปแบบ (Full Brand Banner)
+                    </div>
+                    <div className="text-[10px] text-stone-500">
+                      เปลี่ยนสีแถบหัวข้อด้านบนทั้งหมดให้เป็นสีประจำร้าน
+                    </div>
+                  </div>
+                  {formData.brandHeaderStyle === 'brand' && (
+                    <Check className="w-4 h-4 text-stone-900 stroke-[3]" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Live Interactive Preview Box */}
+            <div className="bg-stone-100/80 border border-stone-200 rounded-2xl p-4 space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-bold text-stone-700">
+                <span className="flex items-center gap-1">
+                  <span>👀 ตัวอย่างการแสดงผลจริง (Live Branding Preview):</span>
+                </span>
+                <span className="text-[10px] text-stone-500 font-mono">
+                  CSS Variables: --brand-primary, --btn-primary-bg
+                </span>
+              </div>
+              
+              <div className="bg-white rounded-xl p-3 border border-stone-200/80 shadow-2xs flex flex-wrap items-center gap-3">
+                {/* Sample Button */}
+                <button
+                  type="button"
+                  className="px-4 py-2 rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-default transition-all"
+                  style={{
+                    backgroundColor: formData.brandColor || DEFAULT_BRAND_COLOR,
+                    color: '#ffffff',
+                  }}
+                >
+                  <Scissors className="w-3.5 h-3.5" />
+                  <span>ปุ่มหลักของร้าน (Primary Button)</span>
+                </button>
+
+                {/* Sample Badge */}
+                <span
+                  className="px-3 py-1 rounded-full text-xs font-extrabold flex items-center gap-1"
+                  style={{
+                    backgroundColor: `rgba(${formData.brandColor ? parseInt(formData.brandColor.slice(1,3), 16) || 217 : 217}, ${formData.brandColor ? parseInt(formData.brandColor.slice(3,5), 16) || 119 : 119}, ${formData.brandColor ? parseInt(formData.brandColor.slice(5,7), 16) || 6 : 6}, 0.15)`,
+                    color: formData.brandColor || DEFAULT_BRAND_COLOR,
+                  }}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>ป้ายกำกับร้าน (Store Badge)</span>
+                </span>
+
+                {/* Sample Tag */}
+                <span
+                  className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold border"
+                  style={{
+                    borderColor: formData.brandColor || DEFAULT_BRAND_COLOR,
+                    color: formData.brandColor || DEFAULT_BRAND_COLOR,
+                  }}
+                >
+                  💈 {formData.storeName || 'BARBERSHOP'}
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Action Save Button with Tactile Feedback & Effect */}
           <div className="pt-3 border-t border-stone-100 flex items-center justify-end gap-3">
             <button
@@ -708,67 +969,75 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {barbers.map((barber) => (
-                <div
-                  key={barber.id}
-                  className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-3 hover:border-amber-300 transition-all shadow-2xs"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-amber-500 text-stone-950 font-black text-sm flex items-center justify-center shadow-2xs">
-                        {barber.nickname?.slice(0, 2) || barber.name.slice(0, 2)}
+            {barbers.length === 0 ? (
+              <div className="p-8 text-center bg-stone-50 border border-dashed border-stone-200 rounded-2xl space-y-2">
+                <Users className="w-8 h-8 text-stone-300 mx-auto" />
+                <p className="text-xs font-bold text-stone-600">ยังไม่มีรายชื่อช่างในระบบ</p>
+                <p className="text-[11px] text-stone-400">กดปุ่ม "+ เพิ่มช่างใหม่" ด้านบนเพื่อเพิ่มช่างคนแรกของร้าน</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {barbers.map((barber) => (
+                  <div
+                    key={barber.id}
+                    className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-3 hover:border-amber-300 transition-all shadow-2xs"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-amber-500 text-stone-950 font-black text-sm flex items-center justify-center shadow-2xs">
+                          {barber.nickname?.slice(0, 2) || barber.name.slice(0, 2)}
+                        </div>
+                        <div>
+                          <h4 className="font-black text-xs text-stone-900">{barber.name}</h4>
+                          <span className="text-[11px] text-amber-900 font-bold block">
+                            (ช่าง{barber.nickname})
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenEditBarber(barber)}
+                          className="p-1.5 rounded-lg bg-white hover:bg-stone-200 active:scale-90 border border-stone-200 text-stone-700 transition-all cursor-pointer"
+                          title="แก้ไขข้อมูลช่าง"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingBarberId(barber.id)}
+                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 active:scale-90 text-rose-600 border border-rose-200 transition-all cursor-pointer"
+                          title="ลบช่าง"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px] bg-white p-2.5 rounded-xl border border-stone-200">
+                      <div>
+                        <span className="text-stone-400 block">เงินเดือนฐาน:</span>
+                        <strong className="text-stone-900 font-mono">
+                          {formatCurrency(barber.baseSalary || 0)}
+                        </strong>
                       </div>
                       <div>
-                        <h4 className="font-black text-xs text-stone-900">{barber.name}</h4>
-                        <span className="text-[11px] text-amber-900 font-bold block">
-                          (ช่าง{barber.nickname})
-                        </span>
+                        <span className="text-stone-400 block">ประกันรายได้:</span>
+                        <strong className="text-cyan-800 font-mono">
+                          {formatCurrency(barber.minGuarantee || barber.baseSalaryGuarantee || 0)}
+                        </strong>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleOpenEditBarber(barber)}
-                        className="p-1.5 rounded-lg bg-white hover:bg-stone-200 active:scale-90 border border-stone-200 text-stone-700 transition-all cursor-pointer"
-                        title="แก้ไขข้อมูลช่าง"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setDeletingBarberId(barber.id)}
-                        className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 active:scale-90 text-rose-600 border border-rose-200 transition-all cursor-pointer"
-                        title="ลบช่าง"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="text-[11px] text-amber-900 bg-amber-50/80 px-2.5 py-1.5 rounded-lg border border-amber-200/60 flex items-center justify-between">
+                      <span>⚡ คอมมิชชั่นรวม:</span>
+                      <span className="font-bold font-mono">
+                        ตัด {formData.haircutCommissionRate ?? 50}% | เคมี {formData.chemicalCommissionRate ?? 40}% | สินค้า {formData.productCommissionRate ?? 10}%
+                      </span>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-[11px] bg-white p-2.5 rounded-xl border border-stone-200">
-                    <div>
-                      <span className="text-stone-400 block">เงินเดือนฐาน:</span>
-                      <strong className="text-stone-900 font-mono">
-                        {formatCurrency(barber.baseSalary || 0)}
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="text-stone-400 block">ประกันรายได้:</span>
-                      <strong className="text-cyan-800 font-mono">
-                        {formatCurrency(barber.minGuarantee || barber.baseSalaryGuarantee || 0)}
-                      </strong>
-                    </div>
-                  </div>
-
-                  <div className="text-[11px] text-amber-900 bg-amber-50/80 px-2.5 py-1.5 rounded-lg border border-amber-200/60 flex items-center justify-between">
-                    <span>⚡ คอมมิชชั่นรวม:</span>
-                    <span className="font-bold font-mono">
-                      ตัด {formData.haircutCommissionRate ?? 50}% | เคมี {formData.chemicalCommissionRate ?? 40}% | สินค้า {formData.productCommissionRate ?? 10}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </motion.div>
       )}
@@ -798,48 +1067,56 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {services.map((srv) => (
-              <div
-                key={srv.id}
-                className="bg-stone-50 border border-stone-200 rounded-2xl p-3.5 flex items-start justify-between gap-3 hover:border-amber-300 transition-all shadow-2xs"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-xs text-stone-900">{srv.name}</span>
-                  </div>
-                  <span className="text-[11px] text-stone-500 block">
-                    หมวด: {srv.category === 'HAIRCUT' ? 'ตัดผม' : srv.category === 'CHEMICAL' ? 'เคมี' : 'สินค้า'} • {srv.durationMinutes} นาที
-                  </span>
-                  {srv.category === 'PRODUCT' && (
-                    <span className="text-[11px] text-emerald-700 font-bold block">
-                      คงเหลือในสต็อก: {srv.stock ?? 0} ชิ้น
+          {services.length === 0 ? (
+            <div className="p-8 text-center bg-stone-50 border border-dashed border-stone-200 rounded-2xl space-y-2">
+              <Scissors className="w-8 h-8 text-stone-300 mx-auto" />
+              <p className="text-xs font-bold text-stone-600">ยังไม่มีรายการบริการหรือสินค้าในระบบ</p>
+              <p className="text-[11px] text-stone-400">กดปุ่ม "+ เพิ่มรายการใหม่" ด้านบนเพื่อเพิ่มบริการตัดผม เคมี หรือสินค้า</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {services.map((srv) => (
+                <div
+                  key={srv.id}
+                  className="bg-stone-50 border border-stone-200 rounded-2xl p-3.5 flex items-start justify-between gap-3 hover:border-amber-300 transition-all shadow-2xs"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-xs text-stone-900">{srv.name}</span>
+                    </div>
+                    <span className="text-[11px] text-stone-500 block">
+                      หมวด: {srv.category === 'HAIRCUT' ? 'ตัดผม' : srv.category === 'CHEMICAL' ? 'เคมี' : 'สินค้า'} • {srv.durationMinutes} นาที
                     </span>
-                  )}
-                  <span className="text-sm font-black text-amber-900 font-mono block">
-                    {formatCurrency(srv.price)}
-                  </span>
-                </div>
+                    {srv.category === 'PRODUCT' && (
+                      <span className="text-[11px] text-emerald-700 font-bold block">
+                        คงเหลือในสต็อก: {srv.stock ?? 0} ชิ้น
+                      </span>
+                    )}
+                    <span className="text-sm font-black text-amber-900 font-mono block">
+                      {formatCurrency(srv.price)}
+                    </span>
+                  </div>
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => handleOpenEditService(srv)}
-                    className="p-1.5 rounded-lg bg-white hover:bg-stone-200 active:scale-90 border border-stone-200 text-stone-700 transition-all cursor-pointer"
-                    title="แก้ไขบริการ"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setDeletingServiceId(srv.id)}
-                    className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 active:scale-90 text-rose-600 border border-rose-200 transition-all cursor-pointer"
-                    title="ลบบริการ"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => handleOpenEditService(srv)}
+                      className="p-1.5 rounded-lg bg-white hover:bg-stone-200 active:scale-90 border border-stone-200 text-stone-700 transition-all cursor-pointer"
+                      title="แก้ไขบริการ"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeletingServiceId(srv.id)}
+                      className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 active:scale-90 text-rose-600 border border-rose-200 transition-all cursor-pointer"
+                      title="ลบบริการ"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       )}
 

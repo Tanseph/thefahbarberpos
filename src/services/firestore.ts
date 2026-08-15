@@ -24,9 +24,6 @@ import {
 } from '../types';
 import {
   DEFAULT_SETTINGS,
-  INITIAL_BARBERS,
-  INITIAL_SERVICES,
-  INITIAL_PACKAGE_TEMPLATES,
   INITIAL_CASH_DRAWER
 } from '../utils/storage';
 
@@ -83,7 +80,7 @@ export async function seedInitialDataIfEmpty(storeEmail: string) {
     const billsSnap = await getDocs(billsCol);
 
     if (barbersSnap.empty && billsSnap.empty) {
-      console.log(`🌱 Initializing store workspace for: ${storeEmail} (${storeId})...`);
+      console.log(`🌱 Initializing clean store workspace for: ${storeEmail} (${storeId})...`);
       const batch = writeBatch(db);
 
       // Mark store system as initialized
@@ -95,34 +92,31 @@ export async function seedInitialDataIfEmpty(storeEmail: string) {
         isSeeded: true 
       });
 
-      // 1. Settings
+      const cleanEmail = storeEmail.trim().toLowerCase();
+      const defaultName = cleanEmail === 'thefahbarber@gmail.com'
+        ? 'THE FAH BARBER & SALON'
+        : cleanEmail.includes('@')
+        ? `${cleanEmail.split('@')[0].toUpperCase()} BARBERSHOP`
+        : 'ร้านตัดผม (BARBERSHOP)';
+
+      // 1. Clean Settings for this store account
       const settingsDocRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SETTINGS, 'store_config');
       batch.set(settingsDocRef, cleanForFirestore({ 
         ...DEFAULT_SETTINGS, 
-        storeName: storeEmail.split('@')[0].toUpperCase() + ' BARBERSHOP',
+        storeName: defaultName,
+        promptPayName: defaultName,
+        address: cleanEmail === 'thefahbarber@gmail.com' ? DEFAULT_SETTINGS.address : '',
+        phone: cleanEmail === 'thefahbarber@gmail.com' ? DEFAULT_SETTINGS.phone : '',
+        taxId: cleanEmail === 'thefahbarber@gmail.com' ? DEFAULT_SETTINGS.taxId : '',
+        promptPayId: cleanEmail === 'thefahbarber@gmail.com' ? DEFAULT_SETTINGS.promptPayId : '',
         updatedAt: new Date().toISOString() 
       }));
 
-      // 2. Initial Starter Barbers
-      INITIAL_BARBERS.forEach((barber) => {
-        batch.set(doc(db, 'stores', storeId, STORE_COLLECTIONS.BARBERS, barber.id), cleanForFirestore(barber));
-      });
-
-      // 3. Initial Starter Services
-      INITIAL_SERVICES.forEach((service) => {
-        batch.set(doc(db, 'stores', storeId, STORE_COLLECTIONS.SERVICES, service.id), cleanForFirestore(service));
-      });
-
-      // 4. Initial Packages
-      INITIAL_PACKAGE_TEMPLATES.forEach((pkg) => {
-        batch.set(doc(db, 'stores', storeId, STORE_COLLECTIONS.PACKAGES, pkg.id), cleanForFirestore(pkg));
-      });
-
-      // 5. Fresh Cash Drawer
+      // 2. Fresh Cash Drawer (0 balances)
       batch.set(doc(db, 'stores', storeId, STORE_COLLECTIONS.CASH_DRAWER, 'current'), cleanForFirestore(INITIAL_CASH_DRAWER));
 
       await batch.commit();
-      console.log(`✅ Store workspace for ${storeEmail} created successfully!`);
+      console.log(`✅ Clean store workspace for ${storeEmail} created successfully (No old data/clean state)!`);
     } else {
       const initDocRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SYSTEM, 'init_status');
       await setDoc(initDocRef, { 

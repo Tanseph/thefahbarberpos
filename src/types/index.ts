@@ -299,6 +299,9 @@ export interface StoreSettings {
   bahtPerPoint?: number;
   pointDiscountValue?: number;
   
+  brandColor?: string; // รหัสสีประจำแบรนด์ เช่น #D97706, #059669, #2563EB
+  brandHeaderStyle?: 'light' | 'brand' | 'dark'; // สไตล์สีพื้นหลังของแถบ Header
+
   enableSalarySlips?: boolean;
   enableTips?: boolean;
   enableCashDrawer?: boolean;

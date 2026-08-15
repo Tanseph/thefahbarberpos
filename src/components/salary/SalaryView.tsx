@@ -481,7 +481,18 @@ export const SalaryView: React.FC<SalaryViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {barberPayrollData.map((item) => {
+              {barberPayrollData.length === 0 ? (
+                <tr>
+                  <td colSpan={13} className="p-8 text-center text-stone-400">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <User className="w-8 h-8 text-stone-300" />
+                      <p className="text-sm font-bold text-stone-600">ยังไม่มีข้อมูลช่างในระบบ</p>
+                      <p className="text-xs text-stone-400">กรุณาเพิ่มรายชื่อช่างในเมนู "ตั้งค่าระบบ" เพื่อเริ่มคำนวณเงินเดือนและค่าคอมมิชชั่น</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                barberPayrollData.map((item) => {
                 const isPaid = item.status === 'PAID';
                 return (
                   <tr key={item.barber.id} className="hover:bg-amber-50/30 transition">
@@ -602,7 +613,7 @@ export const SalaryView: React.FC<SalaryViewProps> = ({
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
             <tfoot className="bg-stone-900 text-white font-mono text-xs border-t-2 border-stone-800">
               <tr>

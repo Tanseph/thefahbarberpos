@@ -620,49 +620,56 @@ export const POSView: React.FC<POSViewProps> = ({
           </div>
 
           {/* Barber Buttons Row - Clean & Minimal Korean Style */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-            {activeBarbers.map((barber) => {
-              const isSelected = selectedBarberId === barber.id;
-              return (
-                <button
-                  key={barber.id}
-                  type="button"
-                  onClick={() => setSelectedBarberId(barber.id)}
-                  className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all border cursor-pointer active:scale-95 text-center relative ${
-                    isSelected
-                      ? 'bg-[#FAF6F0] border-amber-500/80 shadow-xs ring-2 ring-amber-400/40'
-                      : 'bg-stone-50/70 hover:bg-stone-100/90 border-stone-200 text-stone-700'
-                  }`}
-                >
-                  {/* Selected check badge */}
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] shadow-2xs">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </div>
-                  )}
-
-                  {/* Avatar Icon */}
-                  <div
-                    className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm mb-1.5 overflow-hidden transition-transform ${
+          {activeBarbers.length === 0 ? (
+            <div className="p-4 bg-amber-50/60 border border-dashed border-amber-300/80 rounded-2xl text-center space-y-1">
+              <p className="text-xs font-bold text-amber-900">💈 ยังไม่มีรายชื่อช่างในระบบ</p>
+              <p className="text-[11px] text-stone-500">กรุณาไปที่เมนู <strong className="text-stone-700 font-semibold">"ตั้งค่าระบบ"</strong> เพื่อเพิ่มรายชื่อช่างประจำร้าน</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+              {activeBarbers.map((barber) => {
+                const isSelected = selectedBarberId === barber.id;
+                return (
+                  <button
+                    key={barber.id}
+                    type="button"
+                    onClick={() => setSelectedBarberId(barber.id)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all border cursor-pointer active:scale-95 text-center relative ${
                       isSelected
-                        ? 'bg-amber-100 text-amber-900 border border-amber-300 scale-105'
-                        : 'bg-stone-200 text-stone-600 border border-stone-300/60'
+                        ? 'bg-[#FAF6F0] border-amber-500/80 shadow-xs ring-2 ring-amber-400/40'
+                        : 'bg-stone-50/70 hover:bg-stone-100/90 border-stone-200 text-stone-700'
                     }`}
                   >
-                    {barber.avatar ? (
-                      <img src={barber.avatar} alt={barber.nickname} className="w-full h-full object-cover" />
-                    ) : (
-                      <span>{barber.nickname.slice(0, 2)}</span>
+                    {/* Selected check badge */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] shadow-2xs">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </div>
                     )}
-                  </div>
 
-                  <span className={`text-sm font-extrabold block truncate max-w-full tracking-tight ${isSelected ? 'text-stone-900' : 'text-stone-700'}`}>
-                    ช่าง{barber.nickname}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                    {/* Avatar Icon */}
+                    <div
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm mb-1.5 overflow-hidden transition-transform ${
+                        isSelected
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300 scale-105'
+                          : 'bg-stone-200 text-stone-600 border border-stone-300/60'
+                      }`}
+                    >
+                      {barber.avatar ? (
+                        <img src={barber.avatar} alt={barber.nickname} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{barber.nickname.slice(0, 2)}</span>
+                      )}
+                    </div>
+
+                    <span className={`text-sm font-extrabold block truncate max-w-full tracking-tight ${isSelected ? 'text-stone-900' : 'text-stone-700'}`}>
+                      ช่าง{barber.nickname}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* SECTION 2: CUSTOMER & MEMBER ATTACHMENT (กรอกชื่อลูกค้า & สมาชิก) */}
@@ -1354,15 +1361,25 @@ export const POSView: React.FC<POSViewProps> = ({
           {/* SAVE BILL BUTTON (NO POPUP MODAL - Instant Confirmation Toast) */}
           <div className="pt-2">
             <button
+              id="pos-submit-bill-button"
               type="submit"
               disabled={grandTotal <= 0 && rawSubtotal <= 0}
               className={`w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 shadow-sm ${
                 grandTotal > 0 || rawSubtotal > 0
-                  ? 'bg-stone-800 hover:bg-stone-900 text-white hover:shadow-md'
+                  ? 'brand-btn-primary hover:opacity-95 text-white hover:shadow-md'
                   : 'bg-stone-200 text-stone-400 cursor-not-allowed'
               }`}
+              style={
+                grandTotal > 0 || rawSubtotal > 0
+                  ? {
+                      backgroundColor: 'var(--btn-primary-bg)',
+                      color: 'var(--btn-primary-text)',
+                      boxShadow: 'var(--btn-primary-shadow)',
+                    }
+                  : {}
+              }
             >
-              <Sparkles className="w-5 h-5 text-amber-400" />
+              <Sparkles className="w-5 h-5" />
               <span>บันทึกบิลนี้ ({formatCurrency(grandTotal)})</span>
             </button>
           </div>

@@ -44,6 +44,8 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   enablePoints: true,
   bahtPerPoint: 100, // 100 บาท = 1 แต้ม
   pointDiscountValue: 1, // 1 แต้ม = 1 บาท
+  brandColor: '#D97706',
+  brandHeaderStyle: 'light',
   enableSalarySlips: true,
   enableTips: true,
   enableCashDrawer: true,
@@ -278,8 +280,8 @@ export const initialSalarySlips: SalarySlip[] = [];
 
 export const storage = {
   // Account & Multi-tenant Helpers
-  getActiveAccountEmail(): string {
-    return localStorage.getItem(AUTH_KEY) || 'thefahbarber@gmail.com';
+  getActiveAccountEmail(): string | null {
+    return localStorage.getItem(AUTH_KEY);
   },
 
   setActiveAccountEmail(email: string) {
@@ -323,11 +325,31 @@ export const storage = {
   getSettings(email?: string): StoreSettings {
     const key = getStoreKey('settings', email);
     const raw = localStorage.getItem(key);
-    if (!raw) return DEFAULT_SETTINGS;
+    const activeEmail = email || localStorage.getItem(AUTH_KEY) || '';
+    const cleanEmail = activeEmail.trim().toLowerCase();
+    
+    // For primary account default, use store name; for any other new store, generate clean custom name
+    const defaultName = cleanEmail === 'thefahbarber@gmail.com'
+      ? 'THE FAH BARBER & SALON'
+      : cleanEmail.includes('@')
+      ? `${cleanEmail.split('@')[0].toUpperCase()} BARBERSHOP`
+      : 'ร้านตัดผม (BARBERSHOP)';
+
+    const baseConfig: StoreSettings = {
+      ...DEFAULT_SETTINGS,
+      storeName: defaultName,
+      promptPayName: defaultName,
+      address: cleanEmail === 'thefahbarber@gmail.com' ? DEFAULT_SETTINGS.address : '',
+      phone: cleanEmail === 'thefahbarber@gmail.com' ? DEFAULT_SETTINGS.phone : '',
+      taxId: cleanEmail === 'thefahbarber@gmail.com' ? DEFAULT_SETTINGS.taxId : '',
+      promptPayId: cleanEmail === 'thefahbarber@gmail.com' ? DEFAULT_SETTINGS.promptPayId : '',
+    };
+
+    if (!raw) return baseConfig;
     try {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      return { ...baseConfig, ...JSON.parse(raw) };
     } catch {
-      return DEFAULT_SETTINGS;
+      return baseConfig;
     }
   },
   saveSettings(settings: StoreSettings, email?: string) {
@@ -339,7 +361,7 @@ export const storage = {
   getBarbers(email?: string): Barber[] {
     const key = getStoreKey('barbers', email);
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : INITIAL_BARBERS;
+    return raw ? JSON.parse(raw) : [];
   },
   saveBarbers(barbers: Barber[], email?: string) {
     const key = getStoreKey('barbers', email);
@@ -350,7 +372,7 @@ export const storage = {
   getServices(email?: string): ServiceItem[] {
     const key = getStoreKey('services', email);
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : INITIAL_SERVICES;
+    return raw ? JSON.parse(raw) : [];
   },
   saveServices(services: ServiceItem[], email?: string) {
     const key = getStoreKey('services', email);
@@ -382,7 +404,7 @@ export const storage = {
   getPackageTemplates(email?: string): PackageTemplate[] {
     const key = getStoreKey('packages', email);
     const raw = localStorage.getItem(key);
-    if (!raw) return INITIAL_PACKAGE_TEMPLATES;
+    if (!raw) return [];
     try {
       const parsed: PackageTemplate[] = JSON.parse(raw);
       return parsed.map((p, idx) => {
@@ -395,7 +417,7 @@ export const storage = {
         };
       });
     } catch {
-      return INITIAL_PACKAGE_TEMPLATES;
+      return [];
     }
   },
   getPackages(email?: string): PackageTemplate[] {

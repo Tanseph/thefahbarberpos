@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+:root {
+  --brand-primary: #D97706;
+  --brand-primary-rgb: 217, 119, 6;
+  --brand-primary-hover: #B45309;
+  --brand-primary-active: #92400E;
+  --brand-primary-light: rgba(217, 119, 6, 0.12);
+  --brand-primary-subtle: rgba(217, 119, 6, 0.05);
+  --brand-primary-border: rgba(217, 119, 6, 0.25);
+  --brand-primary-text: #FFFFFF;
+  --brand-ring: rgba(217, 119, 6, 0.35);
+
+  --header-bg: #FFFFFF;
+  --header-text: #1C1917;
+  --header-border: rgba(217, 119, 6, 0.18);
+  --header-subnav-bg: rgba(217, 119, 6, 0.04);
+  --header-badge-bg: rgba(217, 119, 6, 0.12);
+  --header-badge-text: #D97706;
+
+  --btn-primary-bg: var(--brand-primary);
+  --btn-primary-hover: var(--brand-primary-hover);
+  --btn-primary-active: var(--brand-primary-active);
+  --btn-primary-text: var(--brand-primary-text);
+  --btn-primary-shadow: 0 4px 14px 0 rgba(217, 119, 6, 0.35);
+}
+
 @layer base {
   body {
     background-color: #FBFBFA;
@@ -9,6 +34,41 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
+}
+
+/* Brand Theme Utility Styles */
+.brand-btn-primary {
+  background-color: var(--btn-primary-bg) !important;
+  color: var(--btn-primary-text) !important;
+  transition: all 0.15s ease-in-out;
+}
+.brand-btn-primary:hover {
+  background-color: var(--btn-primary-hover) !important;
+}
+.brand-btn-primary:active {
+  background-color: var(--btn-primary-active) !important;
+  transform: scale(0.97);
+}
+
+.brand-bg-primary {
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-primary-text) !important;
+}
+.brand-text-primary {
+  color: var(--brand-primary) !important;
+}
+.brand-border-primary {
+  border-color: var(--brand-primary) !important;
+}
+.brand-bg-light {
+  background-color: var(--brand-primary-light) !important;
+}
+.brand-border-light {
+  border-color: var(--brand-primary-border) !important;
+}
+.brand-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--brand-ring) !important;
 }
 
 /* Cute soft scrollbar */
