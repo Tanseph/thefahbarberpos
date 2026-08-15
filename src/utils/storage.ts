@@ -12,19 +12,20 @@ import {
 } from '../types';
 import { getCurrentPeriodString, getTodayDateString } from './formatters';
 
-const STORAGE_KEYS = {
-  SETTINGS: 'barbershop_settings',
-  BARBERS: 'barbershop_barbers',
-  SERVICES: 'barbershop_services',
-  MEMBERS: 'barbershop_members',
-  PACKAGES: 'barbershop_packages',
-  BILLS: 'barbershop_bills',
-  EXPENSES: 'barbershop_expenses',
-  CASH_TRANSACTIONS: 'barbershop_cash_tx',
-  CASH_DRAWER: 'barbershop_cash_drawer',
-  SALARY_SLIPS: 'barbershop_salary_slips',
-  ACTIVE_STAFF: 'barbershop_active_staff',
-};
+export function sanitizeStoreId(email: string): string {
+  if (!email || typeof email !== 'string') return 'default_store';
+  const clean = email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+  return clean || 'default_store';
+}
+
+const AUTH_KEY = 'barbershop_active_account_email';
+const SAVED_ACCOUNTS_KEY = 'barbershop_saved_accounts';
+
+function getStoreKey(baseKey: string, email?: string): string {
+  const activeEmail = email || localStorage.getItem(AUTH_KEY) || 'default_store';
+  const id = sanitizeStoreId(activeEmail);
+  return `barberpos_${id}_${baseKey}`;
+}
 
 export const DEFAULT_SETTINGS: StoreSettings = {
   storeName: 'THE FAH BARBER & SALON',
@@ -131,7 +132,6 @@ export const INITIAL_BARBERS: Barber[] = [
 export const initialBarbers = INITIAL_BARBERS;
 
 export const INITIAL_SERVICES: ServiceItem[] = [
-  // ตัดผม / โกนหนวด
   {
     id: 'srv-1',
     code: 'HC01',
@@ -159,117 +159,57 @@ export const INITIAL_SERVICES: ServiceItem[] = [
     category: 'HAIRCUT',
     price: 250,
     durationMinutes: 30,
-    description: 'สปาผิวหน้าและโกนหนวดเกลี้ยงเกลาพร้อมทา Aftershave บำรุง',
+    description: 'โกนหนวดเกลี้ยงเกลาด้วยโฟมอุ่นและผ้าร้อนผ่อนคลายกล้ามเนื้อ',
     isActive: true,
   },
   {
     id: 'srv-4',
-    code: 'HC04',
-    name: '👦 ตัดผมเด็ก (Kids Haircut)',
-    category: 'HAIRCUT',
-    price: 250,
-    durationMinutes: 30,
-    description: 'ตัดผมเด็กอย่างใจเย็นและพิถีพิถัน',
-    isActive: true,
-  },
-
-  // งานเคมี (ดัด / ทำสี / ทรีทเม้นท์)
-  {
-    id: 'srv-5',
     code: 'CH01',
-    name: '🧪 ดัดวอลลุ่มเกาหลี (Korean Volume Perm)',
+    name: '🧪 ดัดวอลลุ่มสไตล์เกาหลี (Korean Volume Perm)',
     category: 'CHEMICAL',
     price: 1500,
-    cost: 250,
     durationMinutes: 90,
-    description: 'ดัดผมเพิ่มวอลลุ่ม จัดทรงง่าย ไม่ต้องเซ็ตนาน อยู่ทรง 3-4 เดือน',
+    description: 'เพิ่มวอลลุ่มให้ผมดูหนา มีมิติ จัดทรงง่าย สไตล์โอปป้า',
+    isActive: true,
+  },
+  {
+    id: 'srv-5',
+    code: 'CH02',
+    name: '🧪 ย้อมสีผมแฟชั่น / ปิดผมขาว (Hair Color)',
+    category: 'CHEMICAL',
+    price: 1200,
+    durationMinutes: 75,
+    description: 'สีย้อมออร์แกนิก กลิ่นไม่ฉุน ถนอมเส้นผมและหนังศีรษะ',
     isActive: true,
   },
   {
     id: 'srv-6',
-    code: 'CH02',
-    name: '🧪 ดัดดาวน์เพิร์ม กดข้าง (Down Perm)',
+    code: 'CH03',
+    name: '🧪 ดัดฟอยล์สไตล์ฮิปฮอป (Foil Perm / Twist Perm)',
     category: 'CHEMICAL',
-    price: 600,
-    cost: 100,
-    durationMinutes: 45,
-    description: 'ดัดกดผมด้านข้างที่ชี้ฟูให้เรียบแบนเข้าทรงรับกับใบหน้า',
+    price: 1800,
+    durationMinutes: 120,
+    description: 'ดัดผมแนวสตรีท เท็กซ์เจอร์ชัด อยู่ทรงนาน',
     isActive: true,
   },
   {
     id: 'srv-7',
-    code: 'CH03',
-    name: '🎨 ทำสีผมแฟชั่นชาย (Men Hair Color)',
-    category: 'CHEMICAL',
-    price: 1200,
-    cost: 200,
-    durationMinutes: 75,
-    description: 'ทำสีผมพรีเมียม สีติดทนนาน ไม่ทำร้ายหนังศีรษะ',
+    code: 'TR01',
+    name: '💆 สปาดีท็อกซ์หนังศีรษะ & สระไดร์ (Scalp Detox Spa)',
+    category: 'OTHER',
+    price: 450,
+    durationMinutes: 45,
+    description: 'ขจัดสารเคมีและสิ่งอุดตัน นวดกดจุดผ่อนคลายศีรษะ',
     isActive: true,
   },
   {
     id: 'srv-8',
-    code: 'CH04',
-    name: '💆 สปาดีท็อกซ์หนังศีรษะ & นวดผ่อนคลาย (Scalp Detox Spa)',
-    category: 'CHEMICAL',
-    price: 450,
-    cost: 50,
-    durationMinutes: 40,
-    description: 'ทำความสะอาดล้ำลึก ขจัดรังแคและความมัน พร้อมนวดศีรษะ',
-    isActive: true,
-  },
-
-  // สินค้าจัดแต่งทรงผม & ดูแล
-  {
-    id: 'prd-1',
-    code: 'PD01',
-    name: '🧴 โพเมดสูตรน้ำ พรีเมียม (Water-based Pomade 100g)',
+    code: 'PR01',
+    name: '🧴 แว็กซ์แต่งผมโพเมดสูตรน้ำ (Water-based Pomade 100g)',
     category: 'PRODUCT',
     price: 490,
-    cost: 220,
     durationMinutes: 0,
-    stock: 24,
-    trackStock: true,
-    description: 'พลังยึดเกาะระดับสูง ล้างออกง่าย เงางามเป็นธรรมชาติ กลิ่นหอมอบอุ่น',
-    isActive: true,
-  },
-  {
-    id: 'prd-2',
-    code: 'PD02',
-    name: '🧴 แป้งเซ็ตผมแมตต์ (Matte Styling Powder 20g)',
-    category: 'PRODUCT',
-    price: 350,
-    cost: 140,
-    durationMinutes: 0,
-    stock: 18,
-    trackStock: true,
-    description: 'เพิ่มวอลลุ่มให้โคนผม ไม่เหนียวเหนอะหนะ อยู่ทรงแบบธรรมชาติ',
-    isActive: true,
-  },
-  {
-    id: 'prd-3',
-    code: 'PD03',
-    name: '🧴 แชมพูขจัดรังแค & บำรุงรากผม (Anti-Hairfall Tonic Shampoo 300ml)',
-    category: 'PRODUCT',
-    price: 390,
-    cost: 160,
-    durationMinutes: 0,
-    stock: 12,
-    trackStock: true,
-    description: 'แชมพูสูตรเย็นสดชื่น บำรุงรากผมให้แข็งแรง ลดอาการคันหนังศีรษะ',
-    isActive: true,
-  },
-  {
-    id: 'prd-4',
-    code: 'PD04',
-    name: '🧴 เซรั่มปลูกเคราและบำรุงผม (Beard & Hair Growth Serum 50ml)',
-    category: 'PRODUCT',
-    price: 550,
-    cost: 250,
-    durationMinutes: 0,
-    stock: 8,
-    trackStock: true,
-    description: 'กระตุ้นการเกิดใหม่ของเส้นขนและเครา หนาดกดำ',
+    description: 'พลังจัดทรงสูง ล้างออกง่าย ให้ความเงาปานกลาง',
     isActive: true,
   },
 ];
@@ -278,330 +218,150 @@ export const initialServices = INITIAL_SERVICES;
 export const INITIAL_PACKAGE_TEMPLATES: PackageTemplate[] = [
   {
     id: 'pkg-1',
-    name: 'แพ็กเกจ Silver เริ่มต้น',
-    description: 'เติมเงินสุดคุ้มระดับ Silver ใช้ได้ทุกบริการในร้าน',
     level: 'Silver',
-    price: 1000,
-    receivedValue: 1200,
+    name: 'แพ็กเกจ Silver Saver 2,000฿ (คุ้มค่าตัดผม)',
+    price: 2000,
+    receivedValue: 2400,
+    validityDays: 180,
     colorTheme: 'slate',
+    description: 'เติมเงิน 2,000 บาท ได้รับมูลค่า 2,400 บาท สำหรับใช้บริการตัดผมและโกนหนวด',
     isActive: true,
   },
   {
     id: 'pkg-2',
-    name: 'แพ็กเกจ Gold ยอดนิยม',
-    description: 'เติมเงินระดับ Gold รับโบนัสเครดิตเพิ่มพิเศษ คุ้มค่าสูงสุด',
     level: 'Gold',
-    price: 2000,
-    receivedValue: 2500,
+    name: 'แพ็กเกจ Gold Grooming 3,000฿ (ยอดนิยม)',
+    price: 3000,
+    receivedValue: 3800,
+    validityDays: 365,
     colorTheme: 'amber',
+    description: 'เติมเงิน 3,000 บาท ได้รับมูลค่า 3,800 บาท ใช้ได้ทุกบริการรวมทั้งงานเคมี',
     isActive: true,
   },
   {
     id: 'pkg-3',
-    name: 'แพ็กเกจ Platinum สุดคุ้ม',
-    description: 'แพ็กเกจระดับ Platinum สำหรับลูกค้าประจำ คืนกำไรจุกๆ',
     level: 'Platinum',
-    price: 3000,
-    receivedValue: 3900,
-    colorTheme: 'cyan',
-    isActive: true,
-  },
-  {
-    id: 'pkg-4',
-    name: 'แพ็กเกจ VIP Diamond พรีเมียม',
-    description: 'ระดับสูงสุด VIP Diamond สิทธิประโยชน์และเครดิตพิเศษเต็มพิกัด',
-    level: 'VIP Diamond',
+    name: 'แพ็กเกจ Platinum VIP 5,000฿ (สุดคุ้มรับเพิ่ม 1,500฿)',
     price: 5000,
-    receivedValue: 7000,
-    colorTheme: 'purple',
+    receivedValue: 6500,
+    validityDays: 365,
+    colorTheme: 'cyan',
+    description: 'เติมเงิน 5,000 บาท ได้รับมูลค่า 6,500 บาท สิทธิ์พิเศษรับของสมนาคุณ',
     isActive: true,
   },
 ];
 export const initialPackages = INITIAL_PACKAGE_TEMPLATES;
 
-export const INITIAL_MEMBERS: Member[] = [
-  {
-    id: 'mem-1',
-    name: 'คุณธนากร สุขสวัสดิ์',
-    nickname: 'เอก',
-    phone: '081-999-8888',
-    birthday: '1992-05-15',
-    gender: 'M',
-    tier: 'VIP_GOLD',
-    packageLevel: 'Gold',
-    balance: 1850,
-    points: 150,
-    totalSpent: 8400,
-    visitCount: 12,
-    notes: 'ชอบตัดทรง Two-Block เฟดข้างเบอร์ 2 เซ็ตด้านหน้าแสกกลาง',
-    createdAt: '2026-01-10T10:00:00.000Z',
-    updatedAt: '2026-08-10T14:30:00.000Z',
-    packages: [],
-  },
-  {
-    id: 'mem-2',
-    name: 'คุณกิตติศักดิ์ พงศ์ไพศาล',
-    nickname: 'บอส',
-    phone: '089-777-6666',
-    birthday: '1995-11-20',
-    gender: 'M',
-    tier: 'PLATINUM',
-    packageLevel: 'Platinum',
-    balance: 3200,
-    points: 380,
-    totalSpent: 16500,
-    visitCount: 18,
-    notes: 'ตัดผมกับช่างฟ้าประจำ ดัดวอลลุ่มเกาหลีทุก 3 เดือน ผิวแพ้ง่าย',
-    createdAt: '2025-11-05T09:00:00.000Z',
-    updatedAt: '2026-08-12T16:00:00.000Z',
-    packages: [],
-  },
-  {
-    id: 'mem-3',
-    name: 'คุณวรเมธ รัตนโชติ',
-    nickname: 'อาร์ม',
-    phone: '095-333-1122',
-    birthday: '1998-03-08',
-    gender: 'M',
-    tier: 'SILVER',
-    packageLevel: 'Silver',
-    balance: 650,
-    points: 35,
-    totalSpent: 3500,
-    visitCount: 4,
-    notes: 'ชอบทรง Classic Pompadour โพกผ้าร้อน',
-    createdAt: '2026-05-20T13:15:00.000Z',
-    updatedAt: '2026-08-01T15:20:00.000Z',
-    packages: [],
-  },
-];
-export const initialMembers = INITIAL_MEMBERS;
+export const INITIAL_MEMBERS: Member[] = [];
+export const initialMembers: Member[] = [];
 
-export const INITIAL_EXPENSES: Expense[] = [
-  {
-    id: 'exp-1',
-    title: 'ค่าไฟฟ้าประจำร้าน (มิ.ย. - ก.ค.)',
-    category: 'UTILITIES',
-    amount: 3850,
-    date: getTodayDateString(),
-    payer: 'เจ้าของร้าน',
-    paymentMethod: 'TRANSFER',
-    receiptNote: 'ใบเสร็จการไฟฟ้านครหลวง เลขที่ MEA-99412',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'exp-2',
-    title: 'สั่งซื้อน้ำยาเคมีดัดผม + ครีมโกนหนวด',
-    category: 'CHEMICALS_EQUIPMENT',
-    amount: 2400,
-    date: getTodayDateString(),
-    payer: 'ช่างฟ้า',
-    paymentMethod: 'CASH',
-    receiptNote: 'ร้านซัพพลายเออร์บาร์เบอร์ บิลเลขที่ BB-202608',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'exp-3',
-    title: 'เบิกเงินล่วงหน้าช่างกอล์ฟ',
-    category: 'BARBER_ADVANCE',
-    amount: 2000,
-    date: getTodayDateString(),
-    payer: 'ช่างกอล์ฟ',
-    paymentMethod: 'CASH',
-    barberId: 'barber-3',
-    barberName: 'ช่างกอล์ฟ',
-    receiptNote: 'เบิกเงินสดฉุกเฉิน หักในรอบเงินเดือน ส.ค. 69',
-    createdAt: new Date().toISOString(),
-  },
-];
-export const initialExpenses = INITIAL_EXPENSES;
+export const INITIAL_BILLS: Bill[] = [];
+export const initialBills: Bill[] = [];
 
-export const generateInitialBills = (): Bill[] => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = (today.getMonth() + 1).toString().padStart(2, '0');
-  const currentDay = today.getDate();
-
-  const bills: Bill[] = [];
-  let billSeq = 1000;
-
-  // Sample data generators for days in current month up to today
-  const sampleRounds = [
-    { dayOffset: 0, time: '10:30', cust: 'คุณธนากร สุขสวัสดิ์', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, prod: { name: '🧴 โพเมดสูตรน้ำ พรีเมียม (Water-based Pomade 100g)', cat: 'PRODUCT', price: 490 }, tip: 50, pay: 'PROMPTPAY' },
-    { dayOffset: 0, time: '11:45', cust: 'ลูกค้าทั่วไป (Walk-in)', barberId: 'barber-2', barberName: 'ช่างบอย', item: { name: '🧪 ดัดวอลลุ่มเกาหลี (Korean Volume Perm)', cat: 'CHEMICAL', price: 1500 }, tip: 100, pay: 'CASH', cashRec: 2000, cashChg: 400 },
-    { dayOffset: 0, time: '14:15', cust: 'คุณวรเมธ รัตนพงศ์', barberId: 'barber-3', barberName: 'ช่างกอล์ฟ', item: { name: '✂️ สระ ไดร์ เซ็ตผมสไตล์วินเทจ', cat: 'HAIRCUT', price: 250 }, tip: 40, pay: 'TRANSFER' },
-    { dayOffset: 0, time: '16:00', cust: 'คุณกิตติธัช วาณิชย์', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, prod: { name: '🧴 แป้งเซ็ตผมแมตต์ (Matte Styling Powder 20g)', cat: 'PRODUCT', price: 350 }, tip: 50, pay: 'SPLIT', splitCash: 400, splitTransfer: 350 },
-    
-    // Day -1 (Yesterday)
-    { dayOffset: 1, time: '11:00', cust: 'คุณอรรถพล', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'CASH', cashRec: 500, cashChg: 100 },
-    { dayOffset: 1, time: '13:30', cust: 'คุณศุภกร', barberId: 'barber-2', barberName: 'ช่างบอย', item: { name: '🧪 ทำสีผมแฟชั่น พรีเมียม (Hair Color & Bleaching)', cat: 'CHEMICAL', price: 1800 }, tip: 100, pay: 'TRANSFER' },
-    { dayOffset: 1, time: '15:20', cust: 'คุณธีรพงษ์', barberId: 'barber-3', barberName: 'ช่างกอล์ฟ', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, prod: { name: '🧴 แชมพูขจัดรังแค & บำรุงรากผม', cat: 'PRODUCT', price: 390 }, tip: 30, pay: 'CASH', cashRec: 800, cashChg: 30 },
-    { dayOffset: 1, time: '17:00', cust: 'คุณธวัชชัย', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ออกแบบทรงผมเฉพาะบุคคล + เซ็ตทรง', cat: 'HAIRCUT', price: 500 }, tip: 100, pay: 'TRANSFER' },
-
-    // Day -2
-    { dayOffset: 2, time: '10:30', cust: 'คุณกฤษฎา', barberId: 'barber-2', barberName: 'ช่างบอย', item: { name: '🧪 ดัดวอลลุ่มเกาหลี (Korean Volume Perm)', cat: 'CHEMICAL', price: 1500 }, tip: 100, pay: 'CASH', cashRec: 1600, cashChg: 0 },
-    { dayOffset: 2, time: '12:00', cust: 'คุณภาคิน', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'TRANSFER' },
-    { dayOffset: 2, time: '14:40', cust: 'คุณนพดล', barberId: 'barber-3', barberName: 'ช่างกอล์ฟ', item: { name: '✂️ ตัดผมเด็ก / นักเรียน', cat: 'HAIRCUT', price: 200 }, tip: 20, pay: 'CASH', cashRec: 300, cashChg: 80 },
-    { dayOffset: 2, time: '16:15', cust: 'คุณวิทวัส', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ สปาดีท็อกซ์หนังศีรษะ & นวดผ่อนคลาย', cat: 'HAIRCUT', price: 450 }, prod: { name: '🧴 โพเมดสูตรน้ำ พรีเมียม (Water-based Pomade 100g)', cat: 'PRODUCT', price: 490 }, tip: 60, pay: 'PROMPTPAY' },
-
-    // Day -3
-    { dayOffset: 3, time: '11:15', cust: 'คุณสุรเชษฐ์', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'TRANSFER' },
-    { dayOffset: 3, time: '13:00', cust: 'คุณปกรณ์', barberId: 'barber-3', barberName: 'ช่างกอล์ฟ', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 30, pay: 'CASH', cashRec: 400, cashChg: 20 },
-    { dayOffset: 3, time: '15:30', cust: 'คุณอนุชา', barberId: 'barber-2', barberName: 'ช่างบอย', item: { name: '🧪 ยืดผมวอลลุ่มธรรมชาติ (Natural Hair Straightening)', cat: 'CHEMICAL', price: 1600 }, tip: 100, pay: 'TRANSFER' },
-
-    // Day -4
-    { dayOffset: 4, time: '10:45', cust: 'คุณจักรพงษ์', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'CASH', cashRec: 500, cashChg: 100 },
-    { dayOffset: 4, time: '12:30', cust: 'คุณชลธี', barberId: 'barber-2', barberName: 'ช่างบอย', item: { name: '✂️ ตัดแต่งทรงหนวดเครา พรีเมียม', cat: 'HAIRCUT', price: 250 }, tip: 50, pay: 'TRANSFER' },
-    { dayOffset: 4, time: '16:00', cust: 'คุณปิยะพงษ์', barberId: 'barber-3', barberName: 'ช่างกอล์ฟ', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, prod: { name: '🧴 เซรั่มปลูกเคราและบำรุงผม (Beard & Hair Growth Serum 50ml)', cat: 'PRODUCT', price: 550 }, tip: 50, pay: 'PROMPTPAY' },
-
-    // Day -5
-    { dayOffset: 5, time: '11:00', cust: 'คุณสมภพ', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'TRANSFER' },
-    { dayOffset: 5, time: '14:00', cust: 'คุณอรรณพ', barberId: 'barber-2', barberName: 'ช่างบอย', item: { name: '🧪 ดัดวอลลุ่มเกาหลี (Korean Volume Perm)', cat: 'CHEMICAL', price: 1500 }, tip: 100, pay: 'CASH', cashRec: 1600, cashChg: 0 },
-    
-    // Day -6
-    { dayOffset: 6, time: '10:00', cust: 'คุณณัฐพล', barberId: 'barber-3', barberName: 'ช่างกอล์ฟ', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'TRANSFER' },
-    { dayOffset: 6, time: '13:00', cust: 'คุณภูมิภัทร', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, prod: { name: '🧴 โพเมดสูตรน้ำ พรีเมียม (Water-based Pomade 100g)', cat: 'PRODUCT', price: 490 }, tip: 50, pay: 'CASH', cashRec: 900, cashChg: 10 },
-    { dayOffset: 6, time: '16:30', cust: 'คุณเฉลิมชัย', barberId: 'barber-2', barberName: 'ช่างบอย', item: { name: '🧪 ทำสีผมแฟชั่น พรีเมียม (Hair Color & Bleaching)', cat: 'CHEMICAL', price: 1800 }, tip: 150, pay: 'TRANSFER' },
-
-    // Day -7
-    { dayOffset: 7, time: '11:30', cust: 'คุณกิตติศักดิ์', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'TRANSFER' },
-    { dayOffset: 7, time: '15:00', cust: 'คุณศุภวิชญ์', barberId: 'barber-3', barberName: 'ช่างกอล์ฟ', item: { name: '✂️ สระ ไดร์ เซ็ตผมสไตล์วินเทจ', cat: 'HAIRCUT', price: 250 }, tip: 30, pay: 'CASH', cashRec: 300, cashChg: 20 },
-
-    // Day -8
-    { dayOffset: 8, time: '10:30', cust: 'คุณวีรยุทธ', barberId: 'barber-2', barberName: 'ช่างบอย', item: { name: '🧪 ดัดวอลลุ่มเกาหลี (Korean Volume Perm)', cat: 'CHEMICAL', price: 1500 }, tip: 100, pay: 'TRANSFER' },
-    { dayOffset: 8, time: '14:20', cust: 'คุณทินกร', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'CASH', cashRec: 400, cashChg: 0 },
-
-    // Day -9
-    { dayOffset: 9, time: '11:00', cust: 'คุณชาญชัย', barberId: 'barber-3', barberName: 'ช่างกอล์ฟ', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'TRANSFER' },
-    { dayOffset: 9, time: '16:00', cust: 'คุณเอกสิทธิ์', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ออกแบบทรงผมเฉพาะบุคคล + เซ็ตทรง', cat: 'HAIRCUT', price: 500 }, tip: 100, pay: 'PROMPTPAY' },
-
-    // Day -10
-    { dayOffset: 10, time: '12:00', cust: 'คุณมนตรี', barberId: 'barber-2', barberName: 'ช่างบอย', item: { name: '🧪 ทำสีผมแฟชั่น พรีเมียม (Hair Color & Bleaching)', cat: 'CHEMICAL', price: 1800 }, tip: 100, pay: 'CASH', cashRec: 2000, cashChg: 100 },
-    { dayOffset: 10, time: '15:30', cust: 'คุณพิชัย', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'TRANSFER' },
-
-    // Day -11
-    { dayOffset: 11, time: '10:45', cust: 'คุณชูเกียรติ', barberId: 'barber-3', barberName: 'ช่างกอล์ฟ', item: { name: '✂️ สปาดีท็อกซ์หนังศีรษะ & นวดผ่อนคลาย', cat: 'HAIRCUT', price: 450 }, tip: 50, pay: 'TRANSFER' },
-    { dayOffset: 11, time: '14:00', cust: 'คุณนรินทร์', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'CASH', cashRec: 400, cashChg: 0 },
-
-    // Day -12
-    { dayOffset: 12, time: '11:30', cust: 'คุณอรรถสิทธิ์', barberId: 'barber-2', barberName: 'ช่างบอย', item: { name: '🧪 ดัดวอลลุ่มเกาหลี (Korean Volume Perm)', cat: 'CHEMICAL', price: 1500 }, tip: 100, pay: 'TRANSFER' },
-    { dayOffset: 12, time: '16:15', cust: 'คุณบรรจง', barberId: 'barber-1', barberName: 'ช่างฟ้า', item: { name: '✂️ ตัดผมชายพรีเมียม (Signature Haircut)', cat: 'HAIRCUT', price: 350 }, tip: 50, pay: 'CASH', cashRec: 500, cashChg: 100 },
-  ];
-
-  sampleRounds.forEach((sr) => {
-    const targetDay = Math.max(1, currentDay - sr.dayOffset);
-    const dayStr = targetDay.toString().padStart(2, '0');
-    const dateIso = `${year}-${month}-${dayStr}T${sr.time}:00.000Z`;
-
-    billSeq += 1;
-    const items = [
-      {
-        id: `citem-${billSeq}-1`,
-        serviceId: 'srv-1',
-        name: sr.item.name,
-        category: sr.item.cat as any,
-        price: sr.item.price,
-        quantity: 1,
-        discount: 0,
-        barberId: sr.barberId,
-        barberName: sr.barberName,
-      }
-    ];
-
-    if (sr.prod) {
-      items.push({
-        id: `citem-${billSeq}-2`,
-        serviceId: 'prd-1',
-        name: sr.prod.name,
-        category: sr.prod.cat as any,
-        price: sr.prod.price,
-        quantity: 1,
-        discount: 0,
-        barberId: sr.barberId,
-        barberName: sr.barberName,
-      });
-    }
-
-    const subtotal = items.reduce((s, i) => s + (i.price * i.quantity), 0);
-    const grandTotal = subtotal + (sr.tip || 0);
-
-    bills.push({
-      id: `bill-gen-${billSeq}`,
-      billNumber: `BS${year.toString().slice(-2)}${month}${dayStr}-${billSeq}`,
-      date: dateIso,
-      customerType: sr.cust.includes('คุณ') ? 'MEMBER' : 'GUEST',
-      memberName: sr.cust,
-      items,
-      subtotal,
-      discountTotal: 0,
-      pointsDiscount: 0,
-      pointsEarned: Math.floor(subtotal / 100),
-      tipAmount: sr.tip || 0,
-      tipBarberId: sr.tip ? sr.barberId : undefined,
-      grandTotal,
-      paymentMethod: sr.pay as any,
-      cashReceived: sr.cashRec,
-      cashChange: sr.cashChg,
-      splitCashAmount: sr.splitCash,
-      splitTransferAmount: sr.splitTransfer,
-      status: 'COMPLETED',
-      createdBy: sr.barberName,
-    });
-  });
-
-  return bills;
-};
-
-export const INITIAL_BILLS: Bill[] = generateInitialBills();
-export const initialBills = INITIAL_BILLS;
+export const INITIAL_EXPENSES: Expense[] = [];
+export const initialExpenses: Expense[] = [];
 
 export const INITIAL_CASH_DRAWER: CashDrawerSummary = {
   date: getTodayDateString(),
-  openingFloat: 3000,
-  cashSales: 1600,
+  openingFloat: 0,
+  cashSales: 0,
   cashInTotal: 0,
-  cashOutTotal: 2000,
-  cashExpenses: 4400,
-  expectedBalance: -1800,
+  cashOutTotal: 0,
+  cashExpenses: 0,
+  expectedBalance: 0,
   status: 'OPEN',
 };
 export const initialCashDrawer = INITIAL_CASH_DRAWER;
 
 export const INITIAL_SALARY_SLIPS: SalarySlip[] = [];
-export const initialSalarySlips = INITIAL_SALARY_SLIPS;
+export const initialSalarySlips: SalarySlip[] = [];
 
-// Safe storage wrapper
 export const storage = {
-  getSettings(): StoreSettings {
-    const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    return raw ? JSON.parse(raw) : DEFAULT_SETTINGS;
+  // Account & Multi-tenant Helpers
+  getActiveAccountEmail(): string {
+    return localStorage.getItem(AUTH_KEY) || 'thefahbarber@gmail.com';
   },
-  saveSettings(settings: StoreSettings) {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+
+  setActiveAccountEmail(email: string) {
+    if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    localStorage.setItem(AUTH_KEY, cleanEmail);
+    this.addSavedAccount(cleanEmail);
     window.dispatchEvent(new Event('barbershop_data_updated'));
   },
 
-  getBarbers(): Barber[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.BARBERS);
+  getSavedAccounts(): string[] {
+    try {
+      const raw = localStorage.getItem(SAVED_ACCOUNTS_KEY);
+      const list: string[] = raw ? JSON.parse(raw) : ['thefahbarber@gmail.com'];
+      return Array.from(new Set(list));
+    } catch {
+      return ['thefahbarber@gmail.com'];
+    }
+  },
+
+  addSavedAccount(email: string) {
+    const list = this.getSavedAccounts();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!list.includes(cleanEmail)) {
+      list.push(cleanEmail);
+      localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(list));
+    }
+  },
+
+  removeSavedAccount(email: string) {
+    const list = this.getSavedAccounts().filter(e => e !== email.trim().toLowerCase());
+    localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(list));
+  },
+
+  logout() {
+    localStorage.removeItem(AUTH_KEY);
+    window.dispatchEvent(new Event('barbershop_data_updated'));
+  },
+
+  // Store-Scoped Getters and Setters
+  getSettings(email?: string): StoreSettings {
+    const key = getStoreKey('settings', email);
+    const raw = localStorage.getItem(key);
+    if (!raw) return DEFAULT_SETTINGS;
+    try {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
+  },
+  saveSettings(settings: StoreSettings, email?: string) {
+    const key = getStoreKey('settings', email);
+    localStorage.setItem(key, JSON.stringify(settings));
+    window.dispatchEvent(new Event('barbershop_data_updated'));
+  },
+
+  getBarbers(email?: string): Barber[] {
+    const key = getStoreKey('barbers', email);
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : INITIAL_BARBERS;
   },
-  saveBarbers(barbers: Barber[]) {
-    localStorage.setItem(STORAGE_KEYS.BARBERS, JSON.stringify(barbers));
+  saveBarbers(barbers: Barber[], email?: string) {
+    const key = getStoreKey('barbers', email);
+    localStorage.setItem(key, JSON.stringify(barbers));
     window.dispatchEvent(new Event('barbershop_data_updated'));
   },
 
-  getServices(): ServiceItem[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.SERVICES);
+  getServices(email?: string): ServiceItem[] {
+    const key = getStoreKey('services', email);
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : INITIAL_SERVICES;
   },
-  saveServices(services: ServiceItem[]) {
-    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+  saveServices(services: ServiceItem[], email?: string) {
+    const key = getStoreKey('services', email);
+    localStorage.setItem(key, JSON.stringify(services));
     window.dispatchEvent(new Event('barbershop_data_updated'));
   },
 
-  getMembers(): Member[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.MEMBERS);
-    if (!raw) return INITIAL_MEMBERS;
+  getMembers(email?: string): Member[] {
+    const key = getStoreKey('members', email);
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
     try {
       const parsed: Member[] = JSON.parse(raw);
       return parsed.map((m) => ({
@@ -610,16 +370,18 @@ export const storage = {
         packageLevel: m.packageLevel || (m.tier === 'PLATINUM' ? 'Platinum' : m.tier === 'VIP_GOLD' ? 'Gold' : m.tier === 'SILVER' ? 'Silver' : 'Standard'),
       }));
     } catch {
-      return INITIAL_MEMBERS;
+      return [];
     }
   },
-  saveMembers(members: Member[]) {
-    localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(members));
+  saveMembers(members: Member[], email?: string) {
+    const key = getStoreKey('members', email);
+    localStorage.setItem(key, JSON.stringify(members));
     window.dispatchEvent(new Event('barbershop_data_updated'));
   },
 
-  getPackageTemplates(): PackageTemplate[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.PACKAGES);
+  getPackageTemplates(email?: string): PackageTemplate[] {
+    const key = getStoreKey('packages', email);
+    const raw = localStorage.getItem(key);
     if (!raw) return INITIAL_PACKAGE_TEMPLATES;
     try {
       const parsed: PackageTemplate[] = JSON.parse(raw);
@@ -636,46 +398,54 @@ export const storage = {
       return INITIAL_PACKAGE_TEMPLATES;
     }
   },
-  getPackages(): PackageTemplate[] {
-    return this.getPackageTemplates();
+  getPackages(email?: string): PackageTemplate[] {
+    return this.getPackageTemplates(email);
   },
-  savePackageTemplates(pkgs: PackageTemplate[]) {
-    localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(pkgs));
+  savePackageTemplates(pkgs: PackageTemplate[], email?: string) {
+    const key = getStoreKey('packages', email);
+    localStorage.setItem(key, JSON.stringify(pkgs));
     window.dispatchEvent(new Event('barbershop_data_updated'));
   },
-  savePackages(pkgs: PackageTemplate[]) {
-    this.savePackageTemplates(pkgs);
+  savePackages(pkgs: PackageTemplate[], email?: string) {
+    this.savePackageTemplates(pkgs, email);
   },
 
-  getBills(): Bill[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.BILLS);
-    return raw ? JSON.parse(raw) : INITIAL_BILLS;
-  },
-  saveBills(bills: Bill[]) {
-    localStorage.setItem(STORAGE_KEYS.BILLS, JSON.stringify(bills));
-    window.dispatchEvent(new Event('barbershop_data_updated'));
-  },
-
-  getExpenses(): Expense[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.EXPENSES);
-    return raw ? JSON.parse(raw) : INITIAL_EXPENSES;
-  },
-  saveExpenses(expenses: Expense[]) {
-    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
-    window.dispatchEvent(new Event('barbershop_data_updated'));
-  },
-
-  getCashTransactions(): CashTransaction[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.CASH_TRANSACTIONS);
+  getBills(email?: string): Bill[] {
+    const key = getStoreKey('bills', email);
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : [];
   },
-  saveCashTransactions(txs: CashTransaction[]) {
-    localStorage.setItem(STORAGE_KEYS.CASH_TRANSACTIONS, JSON.stringify(txs));
+  saveBills(bills: Bill[], email?: string) {
+    const key = getStoreKey('bills', email);
+    localStorage.setItem(key, JSON.stringify(bills));
     window.dispatchEvent(new Event('barbershop_data_updated'));
   },
 
-  getCashDrawer(): CashDrawerSummary {
-    const raw = localStorage.getItem(STORAGE_KEYS.CASH_DRAWER);
+  getExpenses(email?: string): Expense[] {
+    const key = getStoreKey('expenses', email);
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  },
+  saveExpenses(expenses: Expense[], email?: string) {
+    const key = getStoreKey('expenses', email);
+    localStorage.setItem(key, JSON.stringify(expenses));
+    window.dispatchEvent(new Event('barbershop_data_updated'));
+  },
+
+  getCashTransactions(email?: string): CashTransaction[] {
+    const key = getStoreKey('cash_tx', email);
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : [];
+  },
+  saveCashTransactions(txs: CashTransaction[], email?: string) {
+    const key = getStoreKey('cash_tx', email);
+    localStorage.setItem(key, JSON.stringify(txs));
+    window.dispatchEvent(new Event('barbershop_data_updated'));
+  },
+
+  getCashDrawer(email?: string): CashDrawerSummary {
+    const key = getStoreKey('cash_drawer', email);
+    const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed.date === getTodayDateString()) {
@@ -684,87 +454,125 @@ export const storage = {
     }
     return {
       date: getTodayDateString(),
-      openingFloat: 3000,
+      openingFloat: 0,
       cashSales: 0,
       cashInTotal: 0,
       cashOutTotal: 0,
       cashExpenses: 0,
-      expectedBalance: 3000,
+      expectedBalance: 0,
       status: 'OPEN',
     };
   },
-  saveCashDrawer(drawer: CashDrawerSummary) {
-    localStorage.setItem(STORAGE_KEYS.CASH_DRAWER, JSON.stringify(drawer));
+  saveCashDrawer(drawer: CashDrawerSummary, email?: string) {
+    const key = getStoreKey('cash_drawer', email);
+    localStorage.setItem(key, JSON.stringify(drawer));
     window.dispatchEvent(new Event('barbershop_data_updated'));
   },
 
-  getSalarySlips(): SalarySlip[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.SALARY_SLIPS);
+  getSalarySlips(email?: string): SalarySlip[] {
+    const key = getStoreKey('salary_slips', email);
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : [];
   },
-  saveSalarySlips(slips: SalarySlip[]) {
-    localStorage.setItem(STORAGE_KEYS.SALARY_SLIPS, JSON.stringify(slips));
+  saveSalarySlips(slips: SalarySlip[], email?: string) {
+    const key = getStoreKey('salary_slips', email);
+    localStorage.setItem(key, JSON.stringify(slips));
     window.dispatchEvent(new Event('barbershop_data_updated'));
   },
 
-  getActiveStaff(): string {
-    return localStorage.getItem(STORAGE_KEYS.ACTIVE_STAFF) || 'barber-1';
+  getActiveStaff(email?: string): string {
+    const key = getStoreKey('active_staff', email);
+    return localStorage.getItem(key) || 'barber-1';
   },
-  saveActiveStaff(staffId: string) {
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_STAFF, staffId);
+  saveActiveStaff(staffId: string, email?: string) {
+    const key = getStoreKey('active_staff', email);
+    localStorage.setItem(key, staffId);
     window.dispatchEvent(new Event('barbershop_data_updated'));
   },
 
-  // Reset to initial demo database
-  resetDemoData() {
-    localStorage.clear();
-    this.saveSettings(DEFAULT_SETTINGS);
-    this.saveBarbers(INITIAL_BARBERS);
-    this.saveServices(INITIAL_SERVICES);
-    this.saveMembers(INITIAL_MEMBERS);
-    this.savePackageTemplates(INITIAL_PACKAGE_TEMPLATES);
-    this.saveExpenses(INITIAL_EXPENSES);
-    this.saveBills(INITIAL_BILLS);
-    this.saveCashDrawer(INITIAL_CASH_DRAWER);
-    this.saveSalarySlips([]);
+  // Reset CURRENT STORE to 100% clean factory database (WIPES EVERYTHING)
+  resetDemoData(email?: string) {
+    const storeEmail = email || this.getActiveAccountEmail();
+    const id = sanitizeStoreId(storeEmail);
+
+    // Remove all local storage keys for this store
+    const keysToRemove = [
+      `barberpos_${id}_settings`,
+      `barberpos_${id}_barbers`,
+      `barberpos_${id}_services`,
+      `barberpos_${id}_members`,
+      `barberpos_${id}_packages`,
+      `barberpos_${id}_bills`,
+      `barberpos_${id}_expenses`,
+      `barberpos_${id}_cash_tx`,
+      `barberpos_${id}_cash_drawer`,
+      `barberpos_${id}_salary_slips`,
+      `barberpos_${id}_active_staff`,
+    ];
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+
+    // Save blank / factory clean defaults
+    this.saveSettings({
+      ...DEFAULT_SETTINGS,
+      storeName: storeEmail.split('@')[0].toUpperCase() + ' BARBERSHOP',
+    }, storeEmail);
+    this.saveBarbers([], storeEmail);
+    this.saveServices([], storeEmail);
+    this.saveMembers([], storeEmail);
+    this.savePackageTemplates([], storeEmail);
+    this.saveExpenses([], storeEmail);
+    this.saveBills([], storeEmail);
+    this.saveCashDrawer({
+      date: getTodayDateString(),
+      openingFloat: 0,
+      cashSales: 0,
+      cashInTotal: 0,
+      cashOutTotal: 0,
+      cashExpenses: 0,
+      expectedBalance: 0,
+      status: 'OPEN',
+    }, storeEmail);
+    this.saveSalarySlips([], storeEmail);
     window.dispatchEvent(new Event('barbershop_data_updated'));
   },
 
-  resetDatabase() {
-    this.resetDemoData();
+  resetDatabase(email?: string) {
+    this.resetDemoData(email);
   },
 
-  exportDatabaseJSON(): string {
+  exportDatabaseJSON(email?: string): string {
     const data = {
       exportDate: new Date().toISOString(),
-      version: '1.0.0',
-      settings: this.getSettings(),
-      barbers: this.getBarbers(),
-      services: this.getServices(),
-      members: this.getMembers(),
-      packageTemplates: this.getPackageTemplates(),
-      bills: this.getBills(),
-      expenses: this.getExpenses(),
-      cashTransactions: this.getCashTransactions(),
-      cashDrawer: this.getCashDrawer(),
-      salarySlips: this.getSalarySlips(),
+      accountEmail: email || this.getActiveAccountEmail(),
+      version: '2.0.0',
+      settings: this.getSettings(email),
+      barbers: this.getBarbers(email),
+      services: this.getServices(email),
+      members: this.getMembers(email),
+      packageTemplates: this.getPackageTemplates(email),
+      bills: this.getBills(email),
+      expenses: this.getExpenses(email),
+      cashTransactions: this.getCashTransactions(email),
+      cashDrawer: this.getCashDrawer(email),
+      salarySlips: this.getSalarySlips(email),
     };
     return JSON.stringify(data, null, 2);
   },
 
-  importDatabaseJSON(jsonStr: string): boolean {
+  importDatabaseJSON(jsonStr: string, email?: string): boolean {
     try {
       const data = JSON.parse(jsonStr);
-      if (data.settings) this.saveSettings(data.settings);
-      if (data.barbers) this.saveBarbers(data.barbers);
-      if (data.services) this.saveServices(data.services);
-      if (data.members) this.saveMembers(data.members);
-      if (data.packageTemplates) this.savePackageTemplates(data.packageTemplates);
-      if (data.bills) this.saveBills(data.bills);
-      if (data.expenses) this.saveExpenses(data.expenses);
-      if (data.cashTransactions) this.saveCashTransactions(data.cashTransactions);
-      if (data.cashDrawer) this.saveCashDrawer(data.cashDrawer);
-      if (data.salarySlips) this.saveSalarySlips(data.salarySlips);
+      const targetEmail = email || data.accountEmail || this.getActiveAccountEmail();
+      if (data.settings) this.saveSettings(data.settings, targetEmail);
+      if (data.barbers) this.saveBarbers(data.barbers, targetEmail);
+      if (data.services) this.saveServices(data.services, targetEmail);
+      if (data.members) this.saveMembers(data.members, targetEmail);
+      if (data.packageTemplates) this.savePackageTemplates(data.packageTemplates, targetEmail);
+      if (data.bills) this.saveBills(data.bills, targetEmail);
+      if (data.expenses) this.saveExpenses(data.expenses, targetEmail);
+      if (data.cashTransactions) this.saveCashTransactions(data.cashTransactions, targetEmail);
+      if (data.cashDrawer) this.saveCashDrawer(data.cashDrawer, targetEmail);
+      if (data.salarySlips) this.saveSalarySlips(data.salarySlips, targetEmail);
       window.dispatchEvent(new Event('barbershop_data_updated'));
       return true;
     } catch (e) {

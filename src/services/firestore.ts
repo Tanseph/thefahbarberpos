@@ -27,11 +27,7 @@ import {
   INITIAL_BARBERS,
   INITIAL_SERVICES,
   INITIAL_PACKAGE_TEMPLATES,
-  INITIAL_MEMBERS,
-  INITIAL_BILLS,
-  INITIAL_EXPENSES,
-  INITIAL_CASH_DRAWER,
-  INITIAL_SALARY_SLIPS
+  INITIAL_CASH_DRAWER
 } from '../utils/storage';
 
 // Initialize Firebase App
@@ -42,8 +38,15 @@ export const db: Firestore = (firebaseConfig as { firestoreDatabaseId?: string }
   ? getFirestore(app, (firebaseConfig as { firestoreDatabaseId?: string }).firestoreDatabaseId)
   : getFirestore(app);
 
-// Firestore Collection Names
-export const COLLECTIONS = {
+// Helper to sanitize store email identifier for Firestore paths
+export function sanitizeStoreId(email: string): string {
+  if (!email || typeof email !== 'string') return 'default_store';
+  const clean = email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+  return clean || 'default_store';
+}
+
+// Firestore Subcollection Names under stores/{storeId}/
+export const STORE_COLLECTIONS = {
   SETTINGS: 'settings',
   BARBERS: 'barbers',
   SERVICES: 'services',
@@ -53,6 +56,7 @@ export const COLLECTIONS = {
   EXPENSES: 'expenses',
   CASH_DRAWER: 'cash_drawer',
   SALARY_SLIPS: 'salary_slips',
+  SYSTEM: 'system',
 };
 
 // Helper to clean any undefined values which Firestore rejects
@@ -61,123 +65,153 @@ function cleanForFirestore<T>(data: T): T {
   return JSON.parse(JSON.stringify(data));
 }
 
-// Seed initial store data if Firestore collection is completely empty
-export async function seedInitialDataIfEmpty() {
+// Seed initial store data for a specific store account if it's completely new
+export async function seedInitialDataIfEmpty(storeEmail: string) {
   try {
-    const settingsDocRef = doc(db, COLLECTIONS.SETTINGS, 'store_config');
+    const storeId = sanitizeStoreId(storeEmail);
+    const systemCol = collection(db, 'stores', storeId, STORE_COLLECTIONS.SYSTEM);
+    const initSnap = await getDocs(systemCol);
     
-    // Check if bills or barbers exist
-    const barbersSnap = await getDocs(collection(db, COLLECTIONS.BARBERS));
-    if (barbersSnap.empty) {
-      console.log('🌱 Seeding initial barber shop data to Firestore...');
+    // If store was already initialized in the past, do not re-seed
+    if (!initSnap.empty) {
+      return;
+    }
+
+    const barbersCol = collection(db, 'stores', storeId, STORE_COLLECTIONS.BARBERS);
+    const billsCol = collection(db, 'stores', storeId, STORE_COLLECTIONS.BILLS);
+    const barbersSnap = await getDocs(barbersCol);
+    const billsSnap = await getDocs(billsCol);
+
+    if (barbersSnap.empty && billsSnap.empty) {
+      console.log(`🌱 Initializing store workspace for: ${storeEmail} (${storeId})...`);
       const batch = writeBatch(db);
 
+      // Mark store system as initialized
+      const initDocRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SYSTEM, 'init_status');
+      batch.set(initDocRef, { 
+        email: storeEmail, 
+        storeId, 
+        initializedAt: new Date().toISOString(), 
+        isSeeded: true 
+      });
+
       // 1. Settings
-      batch.set(settingsDocRef, cleanForFirestore({ ...DEFAULT_SETTINGS, updatedAt: new Date().toISOString() }));
+      const settingsDocRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SETTINGS, 'store_config');
+      batch.set(settingsDocRef, cleanForFirestore({ 
+        ...DEFAULT_SETTINGS, 
+        storeName: storeEmail.split('@')[0].toUpperCase() + ' BARBERSHOP',
+        updatedAt: new Date().toISOString() 
+      }));
 
-      // 2. Barbers
+      // 2. Initial Starter Barbers
       INITIAL_BARBERS.forEach((barber) => {
-        batch.set(doc(db, COLLECTIONS.BARBERS, barber.id), cleanForFirestore(barber));
+        batch.set(doc(db, 'stores', storeId, STORE_COLLECTIONS.BARBERS, barber.id), cleanForFirestore(barber));
       });
 
-      // 3. Services
+      // 3. Initial Starter Services
       INITIAL_SERVICES.forEach((service) => {
-        batch.set(doc(db, COLLECTIONS.SERVICES, service.id), cleanForFirestore(service));
+        batch.set(doc(db, 'stores', storeId, STORE_COLLECTIONS.SERVICES, service.id), cleanForFirestore(service));
       });
 
-      // 4. Packages
+      // 4. Initial Packages
       INITIAL_PACKAGE_TEMPLATES.forEach((pkg) => {
-        batch.set(doc(db, COLLECTIONS.PACKAGES, pkg.id), cleanForFirestore(pkg));
+        batch.set(doc(db, 'stores', storeId, STORE_COLLECTIONS.PACKAGES, pkg.id), cleanForFirestore(pkg));
       });
 
-      // 5. Members
-      INITIAL_MEMBERS.forEach((member) => {
-        batch.set(doc(db, COLLECTIONS.MEMBERS, member.id), cleanForFirestore(member));
-      });
-
-      // 6. Bills
-      INITIAL_BILLS.forEach((bill) => {
-        batch.set(doc(db, COLLECTIONS.BILLS, bill.id), cleanForFirestore(bill));
-      });
-
-      // 7. Expenses
-      INITIAL_EXPENSES.forEach((exp) => {
-        batch.set(doc(db, COLLECTIONS.EXPENSES, exp.id), cleanForFirestore(exp));
-      });
-
-      // 8. Cash Drawer
-      batch.set(doc(db, COLLECTIONS.CASH_DRAWER, 'current'), cleanForFirestore(INITIAL_CASH_DRAWER));
-
-      // 9. Salary Slips
-      INITIAL_SALARY_SLIPS.forEach((slip) => {
-        batch.set(doc(db, COLLECTIONS.SALARY_SLIPS, slip.id), cleanForFirestore(slip));
-      });
+      // 5. Fresh Cash Drawer
+      batch.set(doc(db, 'stores', storeId, STORE_COLLECTIONS.CASH_DRAWER, 'current'), cleanForFirestore(INITIAL_CASH_DRAWER));
 
       await batch.commit();
-      console.log('✅ Firestore seeded successfully!');
+      console.log(`✅ Store workspace for ${storeEmail} created successfully!`);
+    } else {
+      const initDocRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SYSTEM, 'init_status');
+      await setDoc(initDocRef, { 
+        email: storeEmail, 
+        storeId, 
+        initializedAt: new Date().toISOString(), 
+        isSeeded: true 
+      }, { merge: true });
     }
   } catch (error) {
-    console.error('Error seeding initial Firestore data:', error);
+    console.error('Error seeding store data:', error);
   }
 }
 
-// Reset Firestore Database back to factory demo state
-export async function resetFirestoreToFactory() {
+// Reset Firestore Database for the CURRENT STORE back to clean factory state (Wipes everything completely)
+export async function resetFirestoreToFactory(storeEmail: string) {
   try {
+    const storeId = sanitizeStoreId(storeEmail);
+
+    // 1. Delete all barbers
+    const barbersSnap = await getDocs(collection(db, 'stores', storeId, STORE_COLLECTIONS.BARBERS));
+    await Promise.all(barbersSnap.docs.map(d => deleteDoc(d.ref)));
+
+    // 2. Delete all services
+    const servicesSnap = await getDocs(collection(db, 'stores', storeId, STORE_COLLECTIONS.SERVICES));
+    await Promise.all(servicesSnap.docs.map(d => deleteDoc(d.ref)));
+
+    // 3. Delete all packages
+    const pkgSnap = await getDocs(collection(db, 'stores', storeId, STORE_COLLECTIONS.PACKAGES));
+    await Promise.all(pkgSnap.docs.map(d => deleteDoc(d.ref)));
+
+    // 4. Delete all members
+    const membersSnap = await getDocs(collection(db, 'stores', storeId, STORE_COLLECTIONS.MEMBERS));
+    await Promise.all(membersSnap.docs.map(d => deleteDoc(d.ref)));
+
+    // 5. Delete all bills
+    const billsSnap = await getDocs(collection(db, 'stores', storeId, STORE_COLLECTIONS.BILLS));
+    await Promise.all(billsSnap.docs.map(d => deleteDoc(d.ref)));
+
+    // 6. Delete all expenses
+    const expSnap = await getDocs(collection(db, 'stores', storeId, STORE_COLLECTIONS.EXPENSES));
+    await Promise.all(expSnap.docs.map(d => deleteDoc(d.ref)));
+
+    // 7. Delete all salary slips
+    const slipsSnap = await getDocs(collection(db, 'stores', storeId, STORE_COLLECTIONS.SALARY_SLIPS));
+    await Promise.all(slipsSnap.docs.map(d => deleteDoc(d.ref)));
+
+    // 8. Reset Settings & Cash Drawer
     const batch = writeBatch(db);
+    const settingsDocRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SETTINGS, 'store_config');
+    batch.set(settingsDocRef, cleanForFirestore({
+      ...DEFAULT_SETTINGS,
+      storeName: storeEmail.split('@')[0].toUpperCase() + ' BARBERSHOP',
+      updatedAt: new Date().toISOString()
+    }));
 
-    // 1. Settings
-    batch.set(doc(db, COLLECTIONS.SETTINGS, 'store_config'), cleanForFirestore({ ...DEFAULT_SETTINGS, updatedAt: new Date().toISOString() }));
+    const emptyDrawer = {
+      date: new Date().toISOString().split('T')[0],
+      openingFloat: 0,
+      cashSales: 0,
+      cashInTotal: 0,
+      cashOutTotal: 0,
+      cashExpenses: 0,
+      expectedBalance: 0,
+      status: 'OPEN'
+    };
+    batch.set(doc(db, 'stores', storeId, STORE_COLLECTIONS.CASH_DRAWER, 'current'), cleanForFirestore(emptyDrawer));
 
-    // 2. Barbers
-    INITIAL_BARBERS.forEach((barber) => {
-      batch.set(doc(db, COLLECTIONS.BARBERS, barber.id), cleanForFirestore(barber));
-    });
-
-    // 3. Services
-    INITIAL_SERVICES.forEach((service) => {
-      batch.set(doc(db, COLLECTIONS.SERVICES, service.id), cleanForFirestore(service));
-    });
-
-    // 4. Packages
-    INITIAL_PACKAGE_TEMPLATES.forEach((pkg) => {
-      batch.set(doc(db, COLLECTIONS.PACKAGES, pkg.id), cleanForFirestore(pkg));
-    });
-
-    // 5. Members
-    INITIAL_MEMBERS.forEach((member) => {
-      batch.set(doc(db, COLLECTIONS.MEMBERS, member.id), cleanForFirestore(member));
-    });
-
-    // 6. Bills
-    INITIAL_BILLS.forEach((bill) => {
-      batch.set(doc(db, COLLECTIONS.BILLS, bill.id), cleanForFirestore(bill));
-    });
-
-    // 7. Expenses
-    INITIAL_EXPENSES.forEach((exp) => {
-      batch.set(doc(db, COLLECTIONS.EXPENSES, exp.id), cleanForFirestore(exp));
-    });
-
-    // 8. Cash Drawer
-    batch.set(doc(db, COLLECTIONS.CASH_DRAWER, 'current'), cleanForFirestore(INITIAL_CASH_DRAWER));
-
-    // 9. Salary Slips
-    INITIAL_SALARY_SLIPS.forEach((slip) => {
-      batch.set(doc(db, COLLECTIONS.SALARY_SLIPS, slip.id), cleanForFirestore(slip));
+    // Update system marker
+    batch.set(doc(db, 'stores', storeId, STORE_COLLECTIONS.SYSTEM, 'init_status'), { 
+      email: storeEmail, 
+      storeId, 
+      resetAt: new Date().toISOString(), 
+      isSeeded: true 
     });
 
     await batch.commit();
+    console.log(`✅ Factory Reset Firestore for [${storeEmail}] completed cleanly.`);
   } catch (err) {
-    console.error('Error resetting Firestore to factory:', err);
+    console.error('Error resetting Firestore store to factory:', err);
   }
 }
 
-// ================= Realtime Firestore Hooks / Helpers =================
+// ================= Realtime Firestore Hooks / Helpers (Scoped to storeEmail) =================
 
 // Sync Settings
-export function subscribeSettings(callback: (settings: StoreSettings) => void) {
-  const docRef = doc(db, COLLECTIONS.SETTINGS, 'store_config');
+export function subscribeSettings(storeEmail: string, callback: (settings: StoreSettings) => void) {
+  const storeId = sanitizeStoreId(storeEmail);
+  const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SETTINGS, 'store_config');
   return onSnapshot(docRef, (snap) => {
     if (snap.exists()) {
       callback(snap.data() as StoreSettings);
@@ -187,9 +221,10 @@ export function subscribeSettings(callback: (settings: StoreSettings) => void) {
   });
 }
 
-export async function saveSettingsToFirestore(settings: StoreSettings) {
+export async function saveSettingsToFirestore(storeEmail: string, settings: StoreSettings) {
   try {
-    const docRef = doc(db, COLLECTIONS.SETTINGS, 'store_config');
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SETTINGS, 'store_config');
     await setDoc(docRef, cleanForFirestore({ ...settings, updatedAt: new Date().toISOString() }), { merge: true });
   } catch (err) {
     console.error('Failed to save settings to Firestore:', err);
@@ -197,32 +232,33 @@ export async function saveSettingsToFirestore(settings: StoreSettings) {
 }
 
 // Sync Barbers
-export function subscribeBarbers(callback: (barbers: Barber[]) => void) {
-  return onSnapshot(collection(db, COLLECTIONS.BARBERS), (snap) => {
+export function subscribeBarbers(storeEmail: string, callback: (barbers: Barber[]) => void) {
+  const storeId = sanitizeStoreId(storeEmail);
+  return onSnapshot(collection(db, 'stores', storeId, STORE_COLLECTIONS.BARBERS), (snap) => {
     const list: Barber[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data(), id: docSnap.id } as Barber);
     });
-    if (list.length > 0) {
-      callback(list);
-    }
+    callback(list);
   }, (err) => {
     console.error('Firestore barbers subscription error:', err);
   });
 }
 
-export async function saveBarberToFirestore(barber: Barber) {
+export async function saveBarberToFirestore(storeEmail: string, barber: Barber) {
   try {
-    const docRef = doc(db, COLLECTIONS.BARBERS, barber.id);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.BARBERS, barber.id);
     await setDoc(docRef, cleanForFirestore(barber), { merge: true });
   } catch (err) {
     console.error('Failed to save barber to Firestore:', err);
   }
 }
 
-export async function deleteBarberFromFirestore(barberId: string) {
+export async function deleteBarberFromFirestore(storeEmail: string, barberId: string) {
   try {
-    const docRef = doc(db, COLLECTIONS.BARBERS, barberId);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.BARBERS, barberId);
     await deleteDoc(docRef);
   } catch (err) {
     console.error('Failed to delete barber from Firestore:', err);
@@ -230,32 +266,33 @@ export async function deleteBarberFromFirestore(barberId: string) {
 }
 
 // Sync Services
-export function subscribeServices(callback: (services: ServiceItem[]) => void) {
-  return onSnapshot(collection(db, COLLECTIONS.SERVICES), (snap) => {
+export function subscribeServices(storeEmail: string, callback: (services: ServiceItem[]) => void) {
+  const storeId = sanitizeStoreId(storeEmail);
+  return onSnapshot(collection(db, 'stores', storeId, STORE_COLLECTIONS.SERVICES), (snap) => {
     const list: ServiceItem[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data(), id: docSnap.id } as ServiceItem);
     });
-    if (list.length > 0) {
-      callback(list);
-    }
+    callback(list);
   }, (err) => {
     console.error('Firestore services subscription error:', err);
   });
 }
 
-export async function saveServiceToFirestore(service: ServiceItem) {
+export async function saveServiceToFirestore(storeEmail: string, service: ServiceItem) {
   try {
-    const docRef = doc(db, COLLECTIONS.SERVICES, service.id);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SERVICES, service.id);
     await setDoc(docRef, cleanForFirestore(service), { merge: true });
   } catch (err) {
     console.error('Failed to save service to Firestore:', err);
   }
 }
 
-export async function deleteServiceFromFirestore(serviceId: string) {
+export async function deleteServiceFromFirestore(storeEmail: string, serviceId: string) {
   try {
-    const docRef = doc(db, COLLECTIONS.SERVICES, serviceId);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SERVICES, serviceId);
     await deleteDoc(docRef);
   } catch (err) {
     console.error('Failed to delete service from Firestore:', err);
@@ -263,32 +300,33 @@ export async function deleteServiceFromFirestore(serviceId: string) {
 }
 
 // Sync Packages
-export function subscribePackages(callback: (packages: PackageTemplate[]) => void) {
-  return onSnapshot(collection(db, COLLECTIONS.PACKAGES), (snap) => {
+export function subscribePackages(storeEmail: string, callback: (packages: PackageTemplate[]) => void) {
+  const storeId = sanitizeStoreId(storeEmail);
+  return onSnapshot(collection(db, 'stores', storeId, STORE_COLLECTIONS.PACKAGES), (snap) => {
     const list: PackageTemplate[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data(), id: docSnap.id } as PackageTemplate);
     });
-    if (list.length > 0) {
-      callback(list);
-    }
+    callback(list);
   }, (err) => {
     console.error('Firestore packages subscription error:', err);
   });
 }
 
-export async function savePackageToFirestore(pkg: PackageTemplate) {
+export async function savePackageToFirestore(storeEmail: string, pkg: PackageTemplate) {
   try {
-    const docRef = doc(db, COLLECTIONS.PACKAGES, pkg.id);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.PACKAGES, pkg.id);
     await setDoc(docRef, cleanForFirestore(pkg), { merge: true });
   } catch (err) {
     console.error('Failed to save package to Firestore:', err);
   }
 }
 
-export async function deletePackageFromFirestore(pkgId: string) {
+export async function deletePackageFromFirestore(storeEmail: string, pkgId: string) {
   try {
-    const docRef = doc(db, COLLECTIONS.PACKAGES, pkgId);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.PACKAGES, pkgId);
     await deleteDoc(docRef);
   } catch (err) {
     console.error('Failed to delete package from Firestore:', err);
@@ -296,8 +334,9 @@ export async function deletePackageFromFirestore(pkgId: string) {
 }
 
 // Sync Members
-export function subscribeMembers(callback: (members: Member[]) => void) {
-  return onSnapshot(collection(db, COLLECTIONS.MEMBERS), (snap) => {
+export function subscribeMembers(storeEmail: string, callback: (members: Member[]) => void) {
+  const storeId = sanitizeStoreId(storeEmail);
+  return onSnapshot(collection(db, 'stores', storeId, STORE_COLLECTIONS.MEMBERS), (snap) => {
     const list: Member[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data(), id: docSnap.id } as Member);
@@ -308,18 +347,20 @@ export function subscribeMembers(callback: (members: Member[]) => void) {
   });
 }
 
-export async function saveMemberToFirestore(member: Member) {
+export async function saveMemberToFirestore(storeEmail: string, member: Member) {
   try {
-    const docRef = doc(db, COLLECTIONS.MEMBERS, member.id);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.MEMBERS, member.id);
     await setDoc(docRef, cleanForFirestore(member), { merge: true });
   } catch (err) {
     console.error('Failed to save member to Firestore:', err);
   }
 }
 
-export async function deleteMemberFromFirestore(memberId: string) {
+export async function deleteMemberFromFirestore(storeEmail: string, memberId: string) {
   try {
-    const docRef = doc(db, COLLECTIONS.MEMBERS, memberId);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.MEMBERS, memberId);
     await deleteDoc(docRef);
   } catch (err) {
     console.error('Failed to delete member from Firestore:', err);
@@ -327,13 +368,13 @@ export async function deleteMemberFromFirestore(memberId: string) {
 }
 
 // Sync Bills
-export function subscribeBills(callback: (bills: Bill[]) => void) {
-  return onSnapshot(collection(db, COLLECTIONS.BILLS), (snap) => {
+export function subscribeBills(storeEmail: string, callback: (bills: Bill[]) => void) {
+  const storeId = sanitizeStoreId(storeEmail);
+  return onSnapshot(collection(db, 'stores', storeId, STORE_COLLECTIONS.BILLS), (snap) => {
     const list: Bill[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data(), id: docSnap.id } as Bill);
     });
-    // Sort bills by date descending
     list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     callback(list);
   }, (err) => {
@@ -341,18 +382,20 @@ export function subscribeBills(callback: (bills: Bill[]) => void) {
   });
 }
 
-export async function saveBillToFirestore(bill: Bill) {
+export async function saveBillToFirestore(storeEmail: string, bill: Bill) {
   try {
-    const docRef = doc(db, COLLECTIONS.BILLS, bill.id);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.BILLS, bill.id);
     await setDoc(docRef, cleanForFirestore(bill), { merge: true });
   } catch (err) {
     console.error('Failed to save bill to Firestore:', err);
   }
 }
 
-export async function deleteBillFromFirestore(billId: string) {
+export async function deleteBillFromFirestore(storeEmail: string, billId: string) {
   try {
-    const docRef = doc(db, COLLECTIONS.BILLS, billId);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.BILLS, billId);
     await deleteDoc(docRef);
   } catch (err) {
     console.error('Failed to delete bill from Firestore:', err);
@@ -360,8 +403,9 @@ export async function deleteBillFromFirestore(billId: string) {
 }
 
 // Sync Expenses
-export function subscribeExpenses(callback: (expenses: Expense[]) => void) {
-  return onSnapshot(collection(db, COLLECTIONS.EXPENSES), (snap) => {
+export function subscribeExpenses(storeEmail: string, callback: (expenses: Expense[]) => void) {
+  const storeId = sanitizeStoreId(storeEmail);
+  return onSnapshot(collection(db, 'stores', storeId, STORE_COLLECTIONS.EXPENSES), (snap) => {
     const list: Expense[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data(), id: docSnap.id } as Expense);
@@ -373,18 +417,20 @@ export function subscribeExpenses(callback: (expenses: Expense[]) => void) {
   });
 }
 
-export async function saveExpenseToFirestore(expense: Expense) {
+export async function saveExpenseToFirestore(storeEmail: string, expense: Expense) {
   try {
-    const docRef = doc(db, COLLECTIONS.EXPENSES, expense.id);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.EXPENSES, expense.id);
     await setDoc(docRef, cleanForFirestore(expense), { merge: true });
   } catch (err) {
     console.error('Failed to save expense to Firestore:', err);
   }
 }
 
-export async function deleteExpenseFromFirestore(expenseId: string) {
+export async function deleteExpenseFromFirestore(storeEmail: string, expenseId: string) {
   try {
-    const docRef = doc(db, COLLECTIONS.EXPENSES, expenseId);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.EXPENSES, expenseId);
     await deleteDoc(docRef);
   } catch (err) {
     console.error('Failed to delete expense from Firestore:', err);
@@ -392,8 +438,9 @@ export async function deleteExpenseFromFirestore(expenseId: string) {
 }
 
 // Sync Cash Drawer
-export function subscribeCashDrawer(callback: (drawer: CashDrawerSummary) => void) {
-  const docRef = doc(db, COLLECTIONS.CASH_DRAWER, 'current');
+export function subscribeCashDrawer(storeEmail: string, callback: (drawer: CashDrawerSummary) => void) {
+  const storeId = sanitizeStoreId(storeEmail);
+  const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.CASH_DRAWER, 'current');
   return onSnapshot(docRef, (snap) => {
     if (snap.exists()) {
       callback(snap.data() as CashDrawerSummary);
@@ -403,9 +450,10 @@ export function subscribeCashDrawer(callback: (drawer: CashDrawerSummary) => voi
   });
 }
 
-export async function saveCashDrawerToFirestore(drawer: CashDrawerSummary) {
+export async function saveCashDrawerToFirestore(storeEmail: string, drawer: CashDrawerSummary) {
   try {
-    const docRef = doc(db, COLLECTIONS.CASH_DRAWER, 'current');
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.CASH_DRAWER, 'current');
     await setDoc(docRef, cleanForFirestore(drawer), { merge: true });
   } catch (err) {
     console.error('Failed to save cash drawer to Firestore:', err);
@@ -413,8 +461,9 @@ export async function saveCashDrawerToFirestore(drawer: CashDrawerSummary) {
 }
 
 // Sync Salary Slips
-export function subscribeSalarySlips(callback: (slips: SalarySlip[]) => void) {
-  return onSnapshot(collection(db, COLLECTIONS.SALARY_SLIPS), (snap) => {
+export function subscribeSalarySlips(storeEmail: string, callback: (slips: SalarySlip[]) => void) {
+  const storeId = sanitizeStoreId(storeEmail);
+  return onSnapshot(collection(db, 'stores', storeId, STORE_COLLECTIONS.SALARY_SLIPS), (snap) => {
     const list: SalarySlip[] = [];
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data(), id: docSnap.id } as SalarySlip);
@@ -430,9 +479,10 @@ export function subscribeSalarySlips(callback: (slips: SalarySlip[]) => void) {
   });
 }
 
-export async function saveSalarySlipToFirestore(slip: SalarySlip) {
+export async function saveSalarySlipToFirestore(storeEmail: string, slip: SalarySlip) {
   try {
-    const docRef = doc(db, COLLECTIONS.SALARY_SLIPS, slip.id);
+    const storeId = sanitizeStoreId(storeEmail);
+    const docRef = doc(db, 'stores', storeId, STORE_COLLECTIONS.SALARY_SLIPS, slip.id);
     await setDoc(docRef, cleanForFirestore(slip), { merge: true });
   } catch (err) {
     console.error('Failed to save salary slip to Firestore:', err);

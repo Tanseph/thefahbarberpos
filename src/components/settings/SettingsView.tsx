@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Barber, ServiceCategory, ServiceItem, StoreSettings } from '../../types';
 import { 
   Store, 
@@ -58,6 +58,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   // Form states for store settings
   const [formData, setFormData] = useState<StoreSettings>({ ...settings });
+
+  useEffect(() => {
+    setFormData({ ...settings });
+  }, [settings]);
+
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isSavingStore, setIsSavingStore] = useState(false);
   const [isSavingCommissions, setIsSavingCommissions] = useState(false);

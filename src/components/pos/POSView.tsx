@@ -133,8 +133,8 @@ export const POSView: React.FC<POSViewProps> = ({
   const [billDiscount, setBillDiscount] = useState<number>(0);
   const [isAutoDeductMemberBalance, setIsAutoDeductMemberBalance] = useState<boolean>(true);
 
-  // 6. Payment Method: 'CASH' | 'TRANSFER' | 'SPLIT' | 'MEMBER'
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
+  // 6. Payment Method: 'TRANSFER' | 'CASH' | 'SPLIT' | 'MEMBER'
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('TRANSFER');
   
   // Cash details
   const [cashReceivedInput, setCashReceivedInput] = useState<string>('');
@@ -142,8 +142,7 @@ export const POSView: React.FC<POSViewProps> = ({
   // Split details (จ่ายทั้งสดและโอนในบิลเดียว)
   const [splitCashInput, setSplitCashInput] = useState<string>('');
   
-  // Transfer / PromptPay details
-  const [promptPayQrUrl, setPromptPayQrUrl] = useState<string>('');
+  // Transfer / Notes details
   const [paymentReference, setPaymentReference] = useState<string>('');
 
   // 7. Modals & Notifications
@@ -214,16 +213,6 @@ export const POSView: React.FC<POSViewProps> = ({
   // Split Calculation (สด + โอน)
   const parsedSplitCash = parseFloat(splitCashInput) || 0;
   const splitTransferAmount = Math.max(0, grandTotal - parsedSplitCash);
-
-  // PromptPay QR Generation
-  useEffect(() => {
-    const amountToQr = paymentMethod === 'SPLIT' ? splitTransferAmount : grandTotal;
-    if ((paymentMethod === 'TRANSFER' || paymentMethod === 'PROMPTPAY' || (paymentMethod === 'SPLIT' && splitTransferAmount > 0)) && settings.promptPayId && amountToQr > 0) {
-      generatePromptPayQRDataUrl(settings.promptPayId, amountToQr)
-        .then(setPromptPayQrUrl)
-        .catch(console.error);
-    }
-  }, [paymentMethod, settings.promptPayId, grandTotal, splitTransferAmount]);
 
   // Add Product Line Handler
   const handleAddProductLine = (productId?: string) => {
@@ -433,8 +422,8 @@ export const POSView: React.FC<POSViewProps> = ({
       memberBalanceAfter: selectedMember ? Math.max(0, (selectedMember.balance || 0) - memberDeductedAmount) : undefined,
       grandTotal,
       paymentMethod,
-      cashReceived: paymentMethod === 'CASH' ? (cashReceivedInput ? parsedCashReceived : grandTotal) : undefined,
-      cashChange: paymentMethod === 'CASH' ? cashChange : 0,
+      cashReceived: paymentMethod === 'CASH' ? grandTotal : undefined,
+      cashChange: 0,
       splitCashAmount: finalSplitCash,
       splitTransferAmount: finalSplitTransfer,
       paymentReference: paymentReference.trim() || undefined,
@@ -1161,21 +1150,7 @@ export const POSView: React.FC<POSViewProps> = ({
             </label>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {/* Option 1: เงินสด (CASH) */}
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('CASH')}
-                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
-                  paymentMethod === 'CASH'
-                    ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-bold ring-2 ring-emerald-200 shadow-2xs'
-                    : 'bg-stone-50/70 hover:bg-stone-100 border-stone-200 text-stone-700'
-                }`}
-              >
-                <Banknote className="w-5 h-5 mb-1 text-emerald-600" />
-                <span className="text-xs font-bold">💵 เงินสด</span>
-              </button>
-
-              {/* Option 2: เงินโอน (TRANSFER) */}
+              {/* Option 1: เงินโอน (TRANSFER) */}
               <button
                 type="button"
                 onClick={() => setPaymentMethod('TRANSFER')}
@@ -1187,6 +1162,20 @@ export const POSView: React.FC<POSViewProps> = ({
               >
                 <QrCode className="w-5 h-5 mb-1 text-blue-600" />
                 <span className="text-xs font-bold">📱 เงินโอน</span>
+              </button>
+
+              {/* Option 2: เงินสด (CASH) */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('CASH')}
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
+                  paymentMethod === 'CASH'
+                    ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-bold ring-2 ring-emerald-200 shadow-2xs'
+                    : 'bg-stone-50/70 hover:bg-stone-100 border-stone-200 text-stone-700'
+                }`}
+              >
+                <Banknote className="w-5 h-5 mb-1 text-emerald-600" />
+                <span className="text-xs font-bold">💵 เงินสด</span>
               </button>
 
               {/* Option 3: สลับ (SPLIT: สด + โอน ในบิลเดียว) */}
@@ -1231,75 +1220,9 @@ export const POSView: React.FC<POSViewProps> = ({
           {/* PAYMENT METHOD DETAILS ACCORDING TO SELECTION            */}
           {/* ======================================================== */}
 
-          {/* 1. CASH DETAILS */}
-          {paymentMethod === 'CASH' && (
-            <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                <div>
-                  <label className="text-xs font-bold text-emerald-950 block mb-1">
-                    รับเงินสดมา (บาท):
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-700">
-                      ฿
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={cashReceivedInput}
-                      onChange={(e) => setCashReceivedInput(e.target.value)}
-                      placeholder={grandTotal ? String(grandTotal) : '0'}
-                      className="w-full bg-white border border-emerald-300 focus:border-emerald-500 rounded-xl pl-7 pr-3 py-2 text-base font-extrabold text-stone-900 focus:outline-none font-mono"
-                    />
-                  </div>
-                </div>
+          {/* 1. CASH & TRANSFER: Direct selection with no redundant input boxes */}
 
-                <div className="bg-white p-3 rounded-xl border border-emerald-200 flex items-center justify-between">
-                  <span className="text-xs font-bold text-stone-600">เงินทอนลูกค้า:</span>
-                  <strong className="text-xl font-black text-emerald-600 font-mono">
-                    {formatCurrency(cashChange)}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 2. TRANSFER / QR DETAILS */}
-          {paymentMethod === 'TRANSFER' && (
-            <div className="bg-blue-50/60 border border-blue-200 rounded-2xl p-4 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-xs font-bold text-blue-950">สแกนชำระผ่าน PromptPay / เงินโอน</h3>
-                  <p className="text-[11px] text-blue-800 mt-0.5">
-                    ยอดชำระ: <strong className="font-mono text-sm">{formatCurrency(grandTotal)}</strong>
-                  </p>
-                  {settings.promptPayId && (
-                    <p className="text-[11px] text-stone-500 mt-1">
-                      เบอร์/พร้อมเพย์: <strong className="text-stone-800">{settings.promptPayId}</strong> ({settings.promptPayName || settings.storeName})
-                    </p>
-                  )}
-                </div>
-
-                {promptPayQrUrl && (
-                  <div className="bg-white p-2 rounded-xl border border-blue-200 text-center shadow-2xs">
-                    <img src={promptPayQrUrl} alt="PromptPay QR" className="w-24 h-24 object-contain mx-auto" />
-                    <span className="text-[9px] text-blue-900 font-bold block mt-1">สแกนเพื่อจ่าย</span>
-                  </div>
-                )}
-              </div>
-
-              <input
-                type="text"
-                value={paymentReference}
-                onChange={(e) => setPaymentReference(e.target.value)}
-                placeholder="เลขอ้างอิงสลิปโอนเงิน / หมายเหตุ (ถ้ามี)"
-                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-1.5 text-xs text-stone-800 focus:outline-none"
-              />
-            </div>
-          )}
-
-          {/* 3. SPLIT PAYMENT DETAILS (สด + โอน ในบิลเดียว) */}
+          {/* 2. SPLIT PAYMENT DETAILS (สด + โอน ในบิลเดียว) */}
           {paymentMethod === 'SPLIT' && (
             <div className="bg-purple-50/60 border border-purple-200 rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">

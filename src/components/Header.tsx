@@ -20,24 +20,25 @@ interface HeaderProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   settings: StoreSettings;
-  barbers: Barber[];
-  activeStaffId: string;
-  onSelectStaff: (staffId: string) => void;
+  barbers?: Barber[];
+  activeStaffId?: string;
+  onSelectStaff?: (staffId: string) => void;
   onRequestPinLock?: () => void;
   todaySalesTotal?: number;
   isCloudConnected?: boolean;
+  currentAccountEmail?: string;
+  onSwitchAccount?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
   settings,
-  barbers,
-  activeStaffId,
-  onSelectStaff,
   onRequestPinLock,
   todaySalesTotal = 0,
   isCloudConnected = true,
+  currentAccountEmail,
+  onSwitchAccount,
 }) => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -56,8 +57,6 @@ export const Header: React.FC<HeaderProps> = ({
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  const activeBarber = barbers.find(b => b.id === activeStaffId) || barbers[0];
 
   const navItems: { id: ActiveTab; label: string; emoji: string }[] = [
     { id: 'POS', label: 'POS ขายหน้าร้าน', emoji: '✂️' },
@@ -120,25 +119,20 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-extrabold font-mono">฿{todaySalesTotal.toLocaleString()}</span>
           </div>
 
-          {/* Barber Selection & Profile */}
-          <div className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200/70 border border-stone-200 rounded-2xl px-2.5 py-1 transition">
-            <div className="w-6 h-6 rounded-full bg-stone-300 overflow-hidden flex items-center justify-center font-bold text-stone-700 text-[11px]">
-              {activeBarber?.nickname?.slice(0, 2) || 'BB'}
-            </div>
-
-            <select
-              value={activeStaffId}
-              onChange={(e) => onSelectStaff(e.target.value)}
-              className="bg-transparent text-stone-800 text-xs font-bold focus:outline-none cursor-pointer pr-1"
-              title="สลับช่างผู้ดูแล"
+          {/* Account Store Badge & Switcher */}
+          {currentAccountEmail && (
+            <button
+              onClick={onSwitchAccount}
+              className="flex items-center gap-1.5 px-3 py-1 bg-stone-100 hover:bg-stone-200/80 active:scale-95 text-stone-700 rounded-full border border-stone-200/80 transition cursor-pointer text-xs font-bold shadow-2xs"
+              title="คลิกเพื่อสลับร้าน หรือ ออกจากระบบ"
             >
-              {barbers.filter(b => b.isActive).map((b) => (
-                <option key={b.id} value={b.id} className="bg-white text-stone-800">
-                  ช่าง{b.nickname}
-                </option>
-              ))}
-            </select>
-          </div>
+              <span className="text-stone-500 text-[11px]">ร้าน:</span>
+              <span className="truncate max-w-[130px] text-stone-900 font-extrabold">{currentAccountEmail}</span>
+              <span className="text-[10px] text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded-md font-bold">
+                สลับร้าน
+              </span>
+            </button>
+          )}
 
           {/* PIN Lock */}
           {settings.isPinProtected && (

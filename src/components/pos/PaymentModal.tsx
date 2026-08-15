@@ -34,7 +34,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   settings,
   onConfirmPayment,
 }) => {
-  const [method, setMethod] = useState<PaymentMethod>('CASH');
+  const [method, setMethod] = useState<PaymentMethod>('TRANSFER');
   const [cashReceived, setCashReceived] = useState<number>(grandTotal);
   const [reference, setReference] = useState<string>('');
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
@@ -128,9 +128,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           {/* Payment Method Selector Tabs */}
           <div className="grid grid-cols-4 gap-2 mb-4">
             {[
+              { id: 'TRANSFER' as PaymentMethod, label: 'โอนเงิน', icon: <Landmark className="w-4 h-4" />, emoji: '📱' },
               { id: 'CASH' as PaymentMethod, label: 'เงินสด', icon: <Banknote className="w-4 h-4" />, emoji: '💵' },
               { id: 'PROMPTPAY' as PaymentMethod, label: 'พร้อมเพย์', icon: <QrCode className="w-4 h-4" />, emoji: '📱' },
-              { id: 'TRANSFER' as PaymentMethod, label: 'โอนเงิน', icon: <Landmark className="w-4 h-4" />, emoji: '🏦' },
               { id: 'CREDIT_CARD' as PaymentMethod, label: 'บัตรเครดิต', icon: <CreditCard className="w-4 h-4" />, emoji: '💳' },
             ].map((tab) => {
               const isSelected = method === tab.id;

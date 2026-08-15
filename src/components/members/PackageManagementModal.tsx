@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PackageTemplate } from '../../types';
-import { X, Sparkles, Trash2, Edit3, Plus, ArrowRight, Palette } from 'lucide-react';
+import { X, Sparkles, Trash2, Edit3, Plus, ArrowRight, Palette, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { PACKAGE_COLOR_PALETTES, getPackageColorConfig } from '../../utils/packageColors';
 
@@ -21,6 +21,7 @@ export const PackageManagementModal: React.FC<PackageManagementModalProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingPackage, setDeletingPackage] = useState<PackageTemplate | null>(null);
   const [level, setLevel] = useState('Silver');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -283,11 +284,7 @@ export const PackageManagementModal: React.FC<PackageManagementModalProps> = ({
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => {
-                                if (confirm(`ยืนยันการลบแพ็กเกจ "${pkg.name}"?`)) {
-                                  onDeletePackage(pkg.id);
-                                }
-                              }}
+                              onClick={() => setDeletingPackage(pkg)}
                               className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 shadow-2xs transition cursor-pointer"
                               title="ลบ"
                             >
@@ -353,6 +350,46 @@ export const PackageManagementModal: React.FC<PackageManagementModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Delete Package Confirmation Popup Modal */}
+      {deletingPackage && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white border border-stone-200 rounded-3xl w-full max-w-sm p-5 shadow-2xl relative text-stone-900 space-y-4">
+            <div className="w-11 h-11 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div className="text-center space-y-1.5">
+              <h3 className="text-sm font-black text-stone-900">
+                ยืนยันการลบแพ็กเกจ?
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                คุณแน่ใจหรือไม่ว่าต้องการลบแพ็กเกจ <span className="font-bold text-stone-900">"{deletingPackage.name}"</span> (ราคา {formatCurrency(deletingPackage.price)}) ออกจากระบบ?
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setDeletingPackage(null)}
+                className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 active:scale-95 text-stone-700 text-xs font-bold transition-all cursor-pointer flex-1"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeletePackage(deletingPackage.id);
+                  setDeletingPackage(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-black transition-all cursor-pointer shadow-sm flex-1"
+              >
+                ยืนยันลบ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

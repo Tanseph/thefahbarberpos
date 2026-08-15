@@ -10,15 +10,7 @@ import {
   StoreSettings 
 } from './types';
 import { 
-  initialBarbers, 
-  initialBills, 
-  initialCashDrawer, 
-  initialExpenses, 
-  initialMembers, 
-  initialPackages, 
-  initialSalarySlips, 
-  initialServices, 
-  initialSettings, 
+  DEFAULT_SETTINGS,
   storage 
 } from './utils/storage';
 import {
@@ -58,21 +50,26 @@ import { SalaryView } from './components/salary/SalaryView';
 import { ReportsView } from './components/reports/ReportsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { PINModal } from './components/PINModal';
+import { LoginModal } from './components/LoginModal';
 
 export default function App() {
   // Navigation active tab
   const [activeTab, setActiveTab] = useState<'POS' | 'MEMBERS' | 'EXPENSES' | 'DRAWER' | 'SALARY' | 'REPORTS' | 'SETTINGS'>('POS');
 
-  // Application Data States (synced with storage + Firestore cloud)
-  const [settings, setSettings] = useState<StoreSettings>(() => storage.getSettings());
-  const [barbers, setBarbers] = useState<Barber[]>(() => storage.getBarbers());
-  const [services, setServices] = useState<ServiceItem[]>(() => storage.getServices());
-  const [packageTemplates, setPackageTemplates] = useState<PackageTemplate[]>(() => storage.getPackages());
-  const [members, setMembers] = useState<Member[]>(() => storage.getMembers());
-  const [bills, setBills] = useState<Bill[]>(() => storage.getBills());
-  const [expenses, setExpenses] = useState(() => storage.getExpenses());
-  const [cashDrawer, setCashDrawer] = useState<CashDrawerSummary>(() => storage.getCashDrawer());
-  const [salarySlips, setSalarySlips] = useState<SalarySlip[]>(() => storage.getSalarySlips());
+  // Active Store Account Email (e.g. thefahbarber@gmail.com)
+  const [accountEmail, setAccountEmail] = useState<string>(() => storage.getActiveAccountEmail());
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+
+  // Application Data States (scoped by accountEmail and synced with Firestore real-time)
+  const [settings, setSettings] = useState<StoreSettings>(() => storage.getSettings(accountEmail));
+  const [barbers, setBarbers] = useState<Barber[]>(() => storage.getBarbers(accountEmail));
+  const [services, setServices] = useState<ServiceItem[]>(() => storage.getServices(accountEmail));
+  const [packageTemplates, setPackageTemplates] = useState<PackageTemplate[]>(() => storage.getPackages(accountEmail));
+  const [members, setMembers] = useState<Member[]>(() => storage.getMembers(accountEmail));
+  const [bills, setBills] = useState<Bill[]>(() => storage.getBills(accountEmail));
+  const [expenses, setExpenses] = useState<ReturnType<typeof storage.getExpenses>>(() => storage.getExpenses(accountEmail));
+  const [cashDrawer, setCashDrawer] = useState<CashDrawerSummary>(() => storage.getCashDrawer(accountEmail));
+  const [salarySlips, setSalarySlips] = useState<SalarySlip[]>(() => storage.getSalarySlips(accountEmail));
 
   // Cloud Sync Status Indicator
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
@@ -85,63 +82,65 @@ export default function App() {
   const [pinTargetTab, setPinTargetTab] = useState<'SETTINGS' | 'SALARY' | null>(null);
   const [isAuthenticatedAdmin, setIsAuthenticatedAdmin] = useState(false);
 
-  // 1. Initial Firestore Seed & Real-Time Sync Listeners across all devices
+  // 1. Re-initialize & Real-Time Sync Listeners when Account Email changes
   useEffect(() => {
-    // Seed initial data to cloud if new database
-    seedInitialDataIfEmpty().catch(console.error);
+    if (!accountEmail) return;
 
-    // Subscribe to real-time changes from Firestore
-    const unsubSettings = subscribeSettings((newSettings) => {
+    // Seed initial workspace for this store account if brand new
+    seedInitialDataIfEmpty(accountEmail).catch(console.error);
+
+    // Subscribe to real-time changes from Firestore for this specific account
+    const unsubSettings = subscribeSettings(accountEmail, (newSettings) => {
       setSettings(newSettings);
-      storage.saveSettings(newSettings);
+      storage.saveSettings(newSettings, accountEmail);
       setIsCloudConnected(true);
     });
 
-    const unsubBarbers = subscribeBarbers((newBarbers) => {
+    const unsubBarbers = subscribeBarbers(accountEmail, (newBarbers) => {
       setBarbers(newBarbers);
-      storage.saveBarbers(newBarbers);
+      storage.saveBarbers(newBarbers, accountEmail);
       setIsCloudConnected(true);
     });
 
-    const unsubServices = subscribeServices((newServices) => {
+    const unsubServices = subscribeServices(accountEmail, (newServices) => {
       setServices(newServices);
-      storage.saveServices(newServices);
+      storage.saveServices(newServices, accountEmail);
       setIsCloudConnected(true);
     });
 
-    const unsubPackages = subscribePackages((newPackages) => {
+    const unsubPackages = subscribePackages(accountEmail, (newPackages) => {
       setPackageTemplates(newPackages);
-      storage.savePackages(newPackages);
+      storage.savePackages(newPackages, accountEmail);
       setIsCloudConnected(true);
     });
 
-    const unsubMembers = subscribeMembers((newMembers) => {
+    const unsubMembers = subscribeMembers(accountEmail, (newMembers) => {
       setMembers(newMembers);
-      storage.saveMembers(newMembers);
+      storage.saveMembers(newMembers, accountEmail);
       setIsCloudConnected(true);
     });
 
-    const unsubBills = subscribeBills((newBills) => {
+    const unsubBills = subscribeBills(accountEmail, (newBills) => {
       setBills(newBills);
-      storage.saveBills(newBills);
+      storage.saveBills(newBills, accountEmail);
       setIsCloudConnected(true);
     });
 
-    const unsubExpenses = subscribeExpenses((newExpenses) => {
+    const unsubExpenses = subscribeExpenses(accountEmail, (newExpenses) => {
       setExpenses(newExpenses);
-      storage.saveExpenses(newExpenses);
+      storage.saveExpenses(newExpenses, accountEmail);
       setIsCloudConnected(true);
     });
 
-    const unsubDrawer = subscribeCashDrawer((newDrawer) => {
+    const unsubDrawer = subscribeCashDrawer(accountEmail, (newDrawer) => {
       setCashDrawer(newDrawer);
-      storage.saveCashDrawer(newDrawer);
+      storage.saveCashDrawer(newDrawer, accountEmail);
       setIsCloudConnected(true);
     });
 
-    const unsubSalary = subscribeSalarySlips((newSlips) => {
+    const unsubSalary = subscribeSalarySlips(accountEmail, (newSlips) => {
       setSalarySlips(newSlips);
-      storage.saveSalarySlips(newSlips);
+      storage.saveSalarySlips(newSlips, accountEmail);
       setIsCloudConnected(true);
     });
 
@@ -156,7 +155,7 @@ export default function App() {
       unsubDrawer();
       unsubSalary();
     };
-  }, []);
+  }, [accountEmail]);
 
   // Ensure active staff is valid when barbers update
   useEffect(() => {
@@ -164,6 +163,28 @@ export default function App() {
       setActiveStaffId(barbers[0].id);
     }
   }, [barbers, activeStaffId]);
+
+  // Handle Account Login / Switching
+  const handleLoginAccount = (newEmail: string) => {
+    const clean = newEmail.trim().toLowerCase();
+    storage.setActiveAccountEmail(clean);
+    setAccountEmail(clean);
+
+    // Immediately load local cache for this store account
+    setSettings(storage.getSettings(clean));
+    setBarbers(storage.getBarbers(clean));
+    setServices(storage.getServices(clean));
+    setPackageTemplates(storage.getPackages(clean));
+    setMembers(storage.getMembers(clean));
+    setBills(storage.getBills(clean));
+    setExpenses(storage.getExpenses(clean));
+    setCashDrawer(storage.getCashDrawer(clean));
+    setSalarySlips(storage.getSalarySlips(clean));
+
+    setIsLoginModalOpen(false);
+    setIsAuthenticatedAdmin(false);
+    setActiveTab('POS');
+  };
 
   // Tab switching with PIN protection
   const handleTabChange = (tab: string) => {
@@ -189,26 +210,26 @@ export default function App() {
     }
   };
 
-  // State mutations with cloud sync
+  // State mutations with cloud sync scoped by accountEmail
   const handleSaveSettings = (newSettings: StoreSettings) => {
     setSettings(newSettings);
-    storage.saveSettings(newSettings);
-    saveSettingsToFirestore(newSettings);
+    storage.saveSettings(newSettings, accountEmail);
+    saveSettingsToFirestore(accountEmail, newSettings);
   };
 
   const handleAddBill = (newBill: Bill) => {
     setBills((prev) => [newBill, ...prev]);
-    saveBillToFirestore(newBill);
+    saveBillToFirestore(accountEmail, newBill);
   };
 
   const handleUpdateBill = (updatedBill: Bill) => {
     setBills((prev) => prev.map((b) => (b.id === updatedBill.id ? updatedBill : b)));
-    saveBillToFirestore(updatedBill);
+    saveBillToFirestore(accountEmail, updatedBill);
   };
 
   const handleDeleteBill = (billId: string) => {
     setBills((prev) => prev.filter((b) => b.id !== billId));
-    deleteBillFromFirestore(billId);
+    deleteBillFromFirestore(accountEmail, billId);
   };
 
   const handleVoidBill = (billId: string, reason: string) => {
@@ -244,12 +265,12 @@ export default function App() {
       }
       return [member, ...prev];
     });
-    saveMemberToFirestore(member);
+    saveMemberToFirestore(accountEmail, member);
   };
 
   const handleDeleteMember = (memberId: string) => {
     setMembers((prev) => prev.filter((m) => m.id !== memberId));
-    deleteMemberFromFirestore(memberId);
+    deleteMemberFromFirestore(accountEmail, memberId);
   };
 
   const handleSaveExpense = (expense: typeof expenses[0]) => {
@@ -260,12 +281,12 @@ export default function App() {
       }
       return [expense, ...prev];
     });
-    saveExpenseToFirestore(expense);
+    saveExpenseToFirestore(accountEmail, expense);
   };
 
   const handleDeleteExpense = (expenseId: string) => {
     setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
-    deleteExpenseFromFirestore(expenseId);
+    deleteExpenseFromFirestore(accountEmail, expenseId);
   };
 
   const handleSaveBarber = (barber: Barber) => {
@@ -276,12 +297,12 @@ export default function App() {
       }
       return [...prev, barber];
     });
-    saveBarberToFirestore(barber);
+    saveBarberToFirestore(accountEmail, barber);
   };
 
   const handleDeleteBarber = (barberId: string) => {
     setBarbers((prev) => prev.filter((b) => b.id !== barberId));
-    deleteBarberFromFirestore(barberId);
+    deleteBarberFromFirestore(accountEmail, barberId);
   };
 
   const handleSaveService = (service: ServiceItem) => {
@@ -292,12 +313,12 @@ export default function App() {
       }
       return [...prev, service];
     });
-    saveServiceToFirestore(service);
+    saveServiceToFirestore(accountEmail, service);
   };
 
   const handleDeleteService = (serviceId: string) => {
     setServices((prev) => prev.filter((s) => s.id !== serviceId));
-    deleteServiceFromFirestore(serviceId);
+    deleteServiceFromFirestore(accountEmail, serviceId);
   };
 
   const handleUpdateServicesStock = (serviceId: string, deltaStock: number) => {
@@ -316,18 +337,18 @@ export default function App() {
       }
       return [...prev, pkg];
     });
-    savePackageToFirestore(pkg);
+    savePackageToFirestore(accountEmail, pkg);
   };
 
   const handleDeletePackageTemplate = (pkgId: string) => {
     setPackageTemplates((prev) => prev.filter((p) => p.id !== pkgId));
-    deletePackageFromFirestore(pkgId);
+    deletePackageFromFirestore(accountEmail, pkgId);
   };
 
   const handleUpdateCashDrawer = (newDrawer: CashDrawerSummary) => {
     setCashDrawer(newDrawer);
-    storage.saveCashDrawer(newDrawer);
-    saveCashDrawerToFirestore(newDrawer);
+    storage.saveCashDrawer(newDrawer, accountEmail);
+    saveCashDrawerToFirestore(accountEmail, newDrawer);
   };
 
   const handleSaveSalarySlip = (slip: SalarySlip) => {
@@ -338,22 +359,35 @@ export default function App() {
       }
       return [slip, ...prev];
     });
-    saveSalarySlipToFirestore(slip);
+    saveSalarySlipToFirestore(accountEmail, slip);
   };
 
-  // Factory Reset
+  // Factory Reset for the CURRENT STORE (100% complete wipe of all data)
   const handleResetFactoryData = () => {
-    storage.resetDemoData();
-    setSettings(initialSettings);
-    setBarbers(initialBarbers);
-    setServices(initialServices);
-    setPackageTemplates(initialPackages);
-    setMembers(initialMembers);
-    setBills(initialBills);
-    setExpenses(initialExpenses);
-    setCashDrawer(initialCashDrawer);
-    setSalarySlips(initialSalarySlips);
-    resetFirestoreToFactory().catch(console.error);
+    storage.resetDemoData(accountEmail);
+    const freshSettings: StoreSettings = {
+      ...DEFAULT_SETTINGS,
+      storeName: accountEmail.split('@')[0].toUpperCase() + ' BARBERSHOP',
+    };
+    setSettings(freshSettings);
+    setBarbers([]);
+    setServices([]);
+    setPackageTemplates([]);
+    setMembers([]);
+    setBills([]);
+    setExpenses([]);
+    setCashDrawer({
+      date: new Date().toISOString().split('T')[0],
+      openingFloat: 0,
+      cashSales: 0,
+      cashInTotal: 0,
+      cashOutTotal: 0,
+      cashExpenses: 0,
+      expectedBalance: 0,
+      status: 'OPEN',
+    });
+    setSalarySlips([]);
+    resetFirestoreToFactory(accountEmail).catch(console.error);
     setActiveTab('POS');
   };
 
@@ -370,6 +404,8 @@ export default function App() {
         activeStaffId={activeStaffId}
         onSelectStaff={setActiveStaffId}
         isCloudConnected={isCloudConnected}
+        currentAccountEmail={accountEmail}
+        onSwitchAccount={() => setIsLoginModalOpen(true)}
         todaySalesTotal={bills.filter(b => b.status === 'COMPLETED' && b.date?.startsWith(new Date().toISOString().slice(0, 10))).reduce((sum, b) => sum + (b.grandTotal || 0), 0)}
       />
 
@@ -475,7 +511,7 @@ export default function App() {
           <span>•</span>
           <span className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Cloud Realtime Synced
+            Cloud Realtime Synced ({accountEmail})
           </span>
         </div>
         <div className="flex items-center gap-4">
@@ -493,6 +529,15 @@ export default function App() {
         onSuccess={handlePinSuccess}
         correctPin={settings.adminPin || '1234'}
         title="การเข้าถึงส่วนที่มีความสำคัญ (Admin Security)"
+      />
+
+      {/* Multi-Account Login / Switch Store Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        currentEmail={accountEmail}
+        onLogin={handleLoginAccount}
+        onClose={() => setIsLoginModalOpen(false)}
+        canClose={true}
       />
     </div>
   );
