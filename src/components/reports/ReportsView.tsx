@@ -52,6 +52,7 @@ import {
 import { ReceiptModal } from '../pos/ReceiptModal';
 import { EditBillModal } from '../pos/EditBillModal';
 import { DeleteBillModal } from '../pos/DeleteBillModal';
+import { MergeBillsModal } from '../pos/MergeBillsModal';
 import { AccountantPDFModal } from './AccountantPDFModal';
 
 interface ReportsViewProps {
@@ -62,6 +63,7 @@ interface ReportsViewProps {
   settings: StoreSettings;
   onUpdateBill?: (bill: Bill) => void;
   onDeleteBill?: (billId: string) => void;
+  onUnmergeBill?: (mergedBill: Bill) => void;
   onVoidBill?: (billId: string, reason: string) => void;
 }
 
@@ -89,6 +91,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   settings,
   onUpdateBill,
   onDeleteBill,
+  onUnmergeBill,
   onVoidBill,
 }) => {
   const todayStr = getTodayDateString();
@@ -107,6 +110,28 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   // Modals for Bill Edit & Delete
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [deletingBill, setDeletingBill] = useState<Bill | null>(null);
+
+  // Merge Bills Modal State
+  const [isMergeBillsModalOpen, setIsMergeBillsModalOpen] = useState<boolean>(false);
+  const [initialMergeBillIds, setInitialMergeBillIds] = useState<string[]>([]);
+
+  const handleOpenMergeBillsModal = (preselectedBillId?: string) => {
+    if (preselectedBillId) {
+      setInitialMergeBillIds([preselectedBillId]);
+    } else {
+      setInitialMergeBillIds([]);
+    }
+    setIsMergeBillsModalOpen(true);
+  };
+
+  const handleConfirmMergeBills = (mergedBill: Bill, billIdsToDelete: string[]) => {
+    if (onUpdateBill) {
+      onUpdateBill(mergedBill);
+    }
+    if (onDeleteBill) {
+      billIdsToDelete.forEach((id) => onDeleteBill(id));
+    }
+  };
 
   // Accountant PDF Report Modal State
   const [showAccountantPDFModal, setShowAccountantPDFModal] = useState<boolean>(false);
@@ -1138,16 +1163,31 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 </h3>
               </div>
 
-              {/* Search in Bills */}
-              <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="ค้นหาเลขบิล, ชื่อลูกค้า, ช่าง..."
-                  value={billSearchQuery}
-                  onChange={(e) => setBillSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:border-amber-400"
-                />
+              {/* Merge Bills Button & Search */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {dailyBills.filter(b => b.status !== 'VOIDED').length >= 2 && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenMergeBillsModal()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-stone-950 rounded-xl text-xs font-black transition cursor-pointer shadow-xs whitespace-nowrap"
+                    title="รวม 2 บิลขึ้นไปที่ชำระเงินพร้อมกันเป็นบิลเดียว (เช่น โอนรวม 1 สลิป)"
+                  >
+                    <Layers className="w-3.5 h-3.5 text-stone-950" />
+                    <span>🔗 รวมบิล (Merge Bills)</span>
+                  </button>
+                )}
+
+                {/* Search in Bills */}
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="ค้นหาเลขบิล, ชื่อลูกค้า, ช่าง..."
+                    value={billSearchQuery}
+                    onChange={(e) => setBillSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:border-amber-400"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1225,6 +1265,31 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
+                              {(bill.isMerged || (bill.originalBills && bill.originalBills.length > 0)) ? (
+                                onUnmergeBill && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (window.confirm(`ต้องการยกเลิกรวมบิล #${bill.billNumber} และแยกกลับเป็นบิลเดิมใช่หรือไม่?`)) {
+                                        onUnmergeBill(bill);
+                                      }
+                                    }}
+                                    className="p-1 text-purple-700 hover:text-purple-950 hover:bg-purple-100 rounded-lg transition cursor-pointer"
+                                    title="แยกบิลนี้กลับเป็นบิลเดิมทั้งหมด"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                  </button>
+                                )
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenMergeBillsModal(bill.id)}
+                                  className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition cursor-pointer"
+                                  title="รวมบิลนี้กับบิลอื่น (เช่น ลูกค้า 2 คนโอนรวม 1 สลิป)"
+                                >
+                                  <Layers className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => setEditingBill(bill)}
@@ -2104,6 +2169,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             if (onUpdateBill) onUpdateBill(updated);
             setEditingBill(null);
           }}
+          onUnmergeBill={onUnmergeBill}
         />
       )}
 
@@ -2133,6 +2199,19 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           barbers={barbers}
           settings={settings}
           onExportCSV={() => handleExportCSV(accountantPDFReportType)}
+        />
+      )}
+
+      {/* Merge Bills Modal */}
+      {isMergeBillsModalOpen && (
+        <MergeBillsModal
+          isOpen={isMergeBillsModalOpen}
+          onClose={() => setIsMergeBillsModalOpen(false)}
+          dailyBills={dailyBills}
+          initialSelectedBillIds={initialMergeBillIds}
+          barbers={barbers}
+          onConfirmMerge={handleConfirmMergeBills}
+          settings={settings}
         />
       )}
     </div>

@@ -188,8 +188,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       name: '',
       nickname: '',
       phone: '',
-      baseSalary: 12000,
-      minGuarantee: 18000,
+      baseSalary: undefined,
+      minGuarantee: 0,
       isActive: true,
     });
     setIsBarberModalOpen(true);
@@ -211,8 +211,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       nickname: editingBarber.nickname.trim(),
       phone: editingBarber.phone?.trim() || '',
       baseSalary: Number(editingBarber.baseSalary) || 0,
-      minGuarantee: Number(editingBarber.minGuarantee) || 0,
-      baseSalaryGuarantee: Number(editingBarber.minGuarantee) || 0,
+      minGuarantee: 0,
+      baseSalaryGuarantee: 0,
       isActive: editingBarber.isActive ?? true,
     };
 
@@ -956,7 +956,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <span>รายชื่อช่างตัดผมในร้าน</span>
                 </h3>
                 <p className="text-xs text-stone-500">
-                  จัดการข้อมูลช่าง เงินเดือนฐาน และยอดการันตีรายได้
+                  จัดการข้อมูลช่าง และกำหนดเงินเดือนฐาน
                 </p>
               </div>
 
@@ -1013,19 +1013,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-[11px] bg-white p-2.5 rounded-xl border border-stone-200">
-                      <div>
-                        <span className="text-stone-400 block">เงินเดือนฐาน:</span>
-                        <strong className="text-stone-900 font-mono">
-                          {formatCurrency(barber.baseSalary || 0)}
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-stone-400 block">ประกันรายได้:</span>
-                        <strong className="text-cyan-800 font-mono">
-                          {formatCurrency(barber.minGuarantee || barber.baseSalaryGuarantee || 0)}
-                        </strong>
-                      </div>
+                    <div className="text-[11px] bg-white p-2.5 rounded-xl border border-stone-200 flex items-center justify-between">
+                      <span className="text-stone-500 font-bold">เงินเดือนฐาน:</span>
+                      <strong className="text-stone-900 font-mono text-xs font-black">
+                        {formatCurrency(barber.baseSalary || 0)} / เดือน
+                      </strong>
                     </div>
 
                     <div className="text-[11px] text-amber-900 bg-amber-50/80 px-2.5 py-1.5 rounded-lg border border-amber-200/60 flex items-center justify-between">
@@ -1284,27 +1276,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">เงินเดือนฐาน (บาท)</label>
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  เงินเดือนฐาน (บาท / เดือน)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400 font-mono">฿</span>
                   <input
                     type="number"
                     min="0"
-                    value={editingBarber.baseSalary || 0}
-                    onChange={(e) => setEditingBarber({ ...editingBarber, baseSalary: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-stone-50 border border-stone-300 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-stone-900 font-mono font-bold"
+                    value={editingBarber.baseSalary === undefined || editingBarber.baseSalary === 0 ? '' : editingBarber.baseSalary}
+                    onChange={(e) => setEditingBarber({ ...editingBarber, baseSalary: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                    placeholder="กรอกฐานเงินเดือน (หากไม่มีปล่อยว่างไว้ได้)"
+                    className="w-full bg-stone-50 border border-stone-300 focus:border-amber-500 rounded-xl pl-8 pr-3 py-2 text-xs text-stone-900 font-mono font-bold focus:outline-none"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">ยอดการันตีรายได้ (บาท)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editingBarber.minGuarantee || 0}
-                    onChange={(e) => setEditingBarber({ ...editingBarber, minGuarantee: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-stone-50 border border-stone-300 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-cyan-800 font-mono font-bold"
-                  />
-                </div>
+                <p className="text-[10px] text-stone-400 mt-1">
+                  * หากไม่มีเงินเดือนประจำ (รับเฉพาะค่าคอมมิชชั่นตามผลงาน) ให้ปล่อยว่างไว้ได้เลยครับ
+                </p>
               </div>
 
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900">

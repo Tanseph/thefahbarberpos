@@ -52,6 +52,7 @@ interface POSViewProps {
   onAddBill: (bill: Bill) => void;
   onUpdateBill?: (bill: Bill) => void;
   onDeleteBill?: (billId: string) => void;
+  onUnmergeBill?: (mergedBill: Bill) => void;
   onVoidBill: (billId: string, reason: string) => void;
   settings: StoreSettings;
   cashDrawer: CashDrawerSummary;
@@ -79,6 +80,7 @@ export const POSView: React.FC<POSViewProps> = ({
   onAddBill,
   onUpdateBill,
   onDeleteBill,
+  onUnmergeBill,
   onVoidBill,
   settings,
   cashDrawer,
@@ -677,61 +679,67 @@ export const POSView: React.FC<POSViewProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-stone-400" />
-              <span>2. ข้อมูลลูกค้า & สมาชิก (Customer & Member Account)</span>
+              <span>2. ข้อมูลลูกค้า & สมาชิก (Customer)</span>
             </h2>
-
-            {selectedMember ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedMember(null);
-                  setPointsRedeemed(0);
-                }}
-                className="text-xs text-rose-500 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <span>✕ ยกเลิกผูกสมาชิก</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsMemberModalOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 text-xs font-extrabold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
-              >
-                <UserCheck className="w-3.5 h-3.5 text-amber-700" />
-                <span>+ ค้นหาสมาชิก / เลือกลูกค้า</span>
-              </button>
-            )}
+            <span className="text-[11px] text-stone-400">
+              {selectedMember ? 'ผูกบัญชีสมาชิกแล้ว' : 'ลูกค้าทั่วไป (Walk-in)'}
+            </span>
           </div>
 
-          {/* Customer Name Text Input */}
-          <div className="bg-stone-50/70 border border-stone-200/70 rounded-2xl p-3 space-y-1">
-            <label className="text-xs font-bold text-stone-700 flex items-center justify-between">
-              <span>ชื่อลูกค้า / ชื่อเล่น (Customer Name):</span>
-              <span className="text-[10px] text-stone-400 font-normal">
-                {selectedMember ? 'ผูกบัญชีสมาชิกอยู่' : 'ลูกค้าทั่วไป (Walk-in)'}
-              </span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={selectedMember ? `${selectedMember.name}${selectedMember.nickname ? ` (${selectedMember.nickname})` : ''}` : customerNameInput}
-                onChange={(e) => {
-                  if (!selectedMember) {
-                    setCustomerNameInput(e.target.value);
-                  }
-                }}
-                readOnly={!!selectedMember}
-                placeholder="กรอกชื่อลูกค้า เช่น คุณตั้ม, ลูกค้า walk-in..."
-                className={`w-full border rounded-xl px-3.5 py-2 text-xs font-bold text-stone-900 focus:outline-none ${
-                  selectedMember
-                    ? 'bg-amber-50/70 border-amber-300 text-amber-950 cursor-default'
-                    : 'bg-white border-stone-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100'
-                }`}
-              />
-              {selectedMember && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold bg-stone-900 text-amber-300 px-2 py-0.5 rounded-md">
-                  สมาชิก ⭐ {selectedMember.packageLevel || 'Silver'}
-                </span>
+          {/* Customer Input & Member Search Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+            <div className="sm:col-span-8 lg:col-span-9 space-y-1">
+              <label className="text-xs font-bold text-stone-700 block">
+                ชื่อลูกค้า / ชื่อเล่น:
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={selectedMember ? `${selectedMember.name}${selectedMember.nickname ? ` (${selectedMember.nickname})` : ''}` : customerNameInput}
+                  onChange={(e) => {
+                    if (!selectedMember) {
+                      setCustomerNameInput(e.target.value);
+                    }
+                  }}
+                  readOnly={!!selectedMember}
+                  placeholder="กรุณากรอกชื่อลูกค้า"
+                  className={`w-full border rounded-xl px-3.5 py-2 text-xs font-bold text-stone-900 focus:outline-none transition-all ${
+                    selectedMember
+                      ? 'bg-amber-50/80 border-amber-300 text-amber-950 cursor-default pr-24'
+                      : 'bg-white border-stone-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-100 shadow-2xs'
+                  }`}
+                />
+                {selectedMember && (
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black bg-stone-900 text-amber-300 px-2 py-0.5 rounded-md">
+                    ⭐ {selectedMember.packageLevel || 'Silver'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="sm:col-span-4 lg:col-span-3">
+              {selectedMember ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedMember(null);
+                    setPointsRedeemed(0);
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+                  title="ยกเลิกผูกสมาชิก"
+                >
+                  <span>✕ ยกเลิกผูกสมาชิก</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsMemberModalOpen(true)}
+                  className="w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+                  title="ค้นหาสมาชิก หรือค้นเบอร์โทร"
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-amber-700" />
+                  <span>ค้นหาสมาชิก</span>
+                </button>
               )}
             </div>
           </div>
@@ -1227,7 +1235,30 @@ export const POSView: React.FC<POSViewProps> = ({
           {/* PAYMENT METHOD DETAILS ACCORDING TO SELECTION            */}
           {/* ======================================================== */}
 
-          {/* 1. CASH & TRANSFER: Direct selection with no redundant input boxes */}
+          {/* 1. TRANSFER PAYMENT DETAILS */}
+          {paymentMethod === 'TRANSFER' && (
+            <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-4 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                  <QrCode className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>ชำระโดยการโอนเงิน (สแกน PromptPay / สลิปโอนเงิน)</span>
+                </span>
+                <span className="text-xs font-black text-emerald-900 font-mono">
+                  ยอดโอน: {formatCurrency(grandTotal)}
+                </span>
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                  placeholder="หมายเหตุ / สลิปโอน เช่น โอนรวม 2 คน, โอนจาก ธ.กสิกร (ไม่บังคับ)"
+                  className="w-full bg-white border border-emerald-200 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
 
           {/* 2. SPLIT PAYMENT DETAILS (สด + โอน ในบิลเดียว) */}
           {paymentMethod === 'SPLIT' && (
@@ -1427,6 +1458,7 @@ export const POSView: React.FC<POSViewProps> = ({
         onVoidBill={onVoidBill}
         onUpdateBill={onUpdateBill}
         onDeleteBill={onDeleteBill}
+        onUnmergeBill={onUnmergeBill}
         onSelectBillForReceipt={(bill) => {
           setActiveReceiptBill(bill);
           setIsReceiptModalOpen(true);

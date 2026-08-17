@@ -17,11 +17,13 @@ import {
   Split,
   CreditCard,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Layers
 } from 'lucide-react';
 import { formatCurrency, formatThaiDate } from '../../utils/formatters';
 import { EditBillModal } from './EditBillModal';
 import { DeleteBillModal } from './DeleteBillModal';
+import { MergeBillsModal } from './MergeBillsModal';
 
 interface DailyBillsDrawerProps {
   isOpen: boolean;
@@ -33,6 +35,7 @@ interface DailyBillsDrawerProps {
   onVoidBill: (billId: string, reason: string) => void;
   onUpdateBill?: (bill: Bill) => void;
   onDeleteBill?: (billId: string) => void;
+  onUnmergeBill?: (mergedBill: Bill) => void;
   settings?: StoreSettings;
 }
 
@@ -46,6 +49,7 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
   onVoidBill,
   onUpdateBill,
   onDeleteBill,
+  onUnmergeBill,
   settings,
 }) => {
   const [filter, setFilter] = useState<'ALL' | 'COMPLETED' | 'VOIDED'>('ALL');
@@ -57,6 +61,28 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
   
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [deletingBill, setDeletingBill] = useState<Bill | null>(null);
+
+  // Merge Bills Modal State
+  const [isMergeBillsModalOpen, setIsMergeBillsModalOpen] = useState<boolean>(false);
+  const [initialMergeBillIds, setInitialMergeBillIds] = useState<string[]>([]);
+
+  const handleOpenMergeBillsModal = (preselectedBillId?: string) => {
+    if (preselectedBillId) {
+      setInitialMergeBillIds([preselectedBillId]);
+    } else {
+      setInitialMergeBillIds([]);
+    }
+    setIsMergeBillsModalOpen(true);
+  };
+
+  const handleConfirmMergeBills = (mergedBill: Bill, billIdsToDelete: string[]) => {
+    if (onUpdateBill) {
+      onUpdateBill(mergedBill);
+    }
+    if (onDeleteBill) {
+      billIdsToDelete.forEach((id) => onDeleteBill(id));
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -145,22 +171,36 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
               />
             </div>
 
-            <div className="flex items-center gap-1.5">
-              {(['ALL', 'COMPLETED', 'VOIDED'] as const).map((tab) => (
+            <div className="flex items-center justify-between gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                {(['ALL', 'COMPLETED', 'VOIDED'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setFilter(tab)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                      filter === tab
+                        ? 'bg-stone-800 text-white border-stone-800 shadow-xs'
+                        : 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100'
+                    }`}
+                  >
+                    {tab === 'ALL' && 'ทั้งหมด'}
+                    {tab === 'COMPLETED' && '✅ สำเร็จ'}
+                    {tab === 'VOIDED' && '❌ ยกเลิก'}
+                  </button>
+                ))}
+              </div>
+
+              {bills.filter(b => b.status !== 'VOIDED').length >= 2 && (
                 <button
-                  key={tab}
-                  onClick={() => setFilter(tab)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                    filter === tab
-                      ? 'bg-stone-800 text-white border-stone-800 shadow-xs'
-                      : 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100'
-                  }`}
+                  type="button"
+                  onClick={() => handleOpenMergeBillsModal()}
+                  className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-black flex items-center gap-1 transition cursor-pointer shadow-xs"
+                  title="รวม 2 บิลขึ้นไปเป็นบิลเดียว เช่น โอนรวม 1 สลิป"
                 >
-                  {tab === 'ALL' && 'ทั้งหมด'}
-                  {tab === 'COMPLETED' && '✅ สำเร็จ'}
-                  {tab === 'VOIDED' && '❌ ยกเลิก'}
+                  <Layers className="w-3 h-3 text-stone-950" />
+                  <span>🔗 รวมบิล</span>
                 </button>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -262,11 +302,37 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
                   {/* Actions Toolbar */}
                   <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-stone-200/60 flex-wrap">
                     {/* Left: Quick Switch payment & Edit */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {(bill.isMerged || (bill.originalBills && bill.originalBills.length > 0)) ? (
+                        onUnmergeBill && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`ต้องการยกเลิกรวมบิล #${bill.billNumber} และแยกกลับเป็นบิลเดิมใช่หรือไม่?`)) {
+                                onUnmergeBill(bill);
+                              }
+                            }}
+                            className="px-2.5 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 border border-purple-300 text-purple-950 text-xs font-bold flex items-center gap-1 transition cursor-pointer shadow-2xs"
+                            title="แยกบิลนี้กลับเป็นบิลเดิมทั้งหมด"
+                          >
+                            <RotateCcw className="w-3 h-3 text-purple-700" />
+                            <span>↩️ แยกบิลกลับ</span>
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => handleOpenMergeBillsModal(bill.id)}
+                          className="px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 text-xs font-bold flex items-center gap-1 transition cursor-pointer shadow-2xs"
+                          title="รวมบิลนี้กับบิลอื่น (เช่น ลูกค้า 2 คนโอนรวม 1 สลิป)"
+                        >
+                          <Layers className="w-3 h-3 text-purple-700" />
+                          <span>รวมบิล</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => setEditingBill(bill)}
                         className="px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-1 transition cursor-pointer shadow-2xs"
-                        title="แก้ไขบิล"
+                        title="แก้ไขบิล / เปลี่ยนช่าง / เปลี่ยนวิธีชำระเงิน"
                       >
                         <Edit className="w-3 h-3 text-amber-700" />
                         <span>แก้ไขบิล</span>
@@ -324,6 +390,7 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
               if (onUpdateBill) onUpdateBill(updated);
               setEditingBill(null);
             }}
+            onUnmergeBill={onUnmergeBill}
           />
         )}
 
@@ -337,6 +404,19 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
               if (onDeleteBill) onDeleteBill(billId);
               setDeletingBill(null);
             }}
+          />
+        )}
+
+        {/* Merge Bills Modal */}
+        {isMergeBillsModalOpen && (
+          <MergeBillsModal
+            isOpen={isMergeBillsModalOpen}
+            onClose={() => setIsMergeBillsModalOpen(false)}
+            dailyBills={bills}
+            initialSelectedBillIds={initialMergeBillIds}
+            barbers={barbers}
+            onConfirmMerge={handleConfirmMergeBills}
+            settings={settings}
           />
         )}
 

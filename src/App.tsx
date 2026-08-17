@@ -267,6 +267,40 @@ export default function App() {
     }
   };
 
+  const handleUnmergeBill = (mergedBill: Bill) => {
+    // 1. If originalBills are stored, restore them directly
+    if (mergedBill.originalBills && mergedBill.originalBills.length > 0) {
+      handleDeleteBill(mergedBill.id);
+      mergedBill.originalBills.forEach((originalB) => {
+        handleAddBill(originalB);
+      });
+      return;
+    }
+
+    // 2. Fallback: If no originalBills, split by distinct item into separate bills
+    if (mergedBill.items && mergedBill.items.length > 1) {
+      handleDeleteBill(mergedBill.id);
+      mergedBill.items.forEach((item, idx) => {
+        const itemTotal = item.price * item.quantity;
+        const splitBill: Bill = {
+          ...mergedBill,
+          id: `bill-${Date.now()}-${idx}`,
+          billNumber: `${mergedBill.billNumber.replace(/-M\d+/, '')}-${idx + 1}`,
+          items: [item],
+          subtotal: itemTotal,
+          grandTotal: itemTotal,
+          discountTotal: 0,
+          pointsDiscount: 0,
+          tipAmount: 0,
+          isMerged: false,
+          originalBills: undefined,
+          notes: `[แยกจากบิลรวม ${mergedBill.billNumber}]`,
+        };
+        handleAddBill(splitBill);
+      });
+    }
+  };
+
   const handleVoidBill = (billId: string, reason: string) => {
     const targetBill = bills.find((b) => b.id === billId);
     if (targetBill && targetBill.memberId && targetBill.memberDeductedAmount && targetBill.memberDeductedAmount > 0) {
@@ -483,6 +517,7 @@ export default function App() {
             onAddBill={handleAddBill}
             onUpdateBill={handleUpdateBill}
             onDeleteBill={handleDeleteBill}
+            onUnmergeBill={handleUnmergeBill}
             onVoidBill={handleVoidBill}
             settings={settings}
             cashDrawer={cashDrawer}
@@ -546,6 +581,7 @@ export default function App() {
             settings={settings}
             onUpdateBill={handleUpdateBill}
             onDeleteBill={handleDeleteBill}
+            onUnmergeBill={handleUnmergeBill}
             onVoidBill={handleVoidBill}
           />
         )}

@@ -16,7 +16,9 @@ import {
   Receipt,
   Plus,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Layers,
+  RotateCcw
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -26,6 +28,7 @@ interface EditBillModalProps {
   bill: Bill | null;
   barbers: Barber[];
   onSaveBill: (updatedBill: Bill) => void;
+  onUnmergeBill?: (mergedBill: Bill) => void;
 }
 
 export const EditBillModal: React.FC<EditBillModalProps> = ({
@@ -34,6 +37,7 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
   bill,
   barbers,
   onSaveBill,
+  onUnmergeBill,
 }) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(bill?.paymentMethod || 'CASH');
   const [splitCash, setSplitCash] = useState<number>(bill?.splitCashAmount || 0);
@@ -179,6 +183,46 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
 
         {/* Form Body Scrollable */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
+          {/* Merged Bill Alert & Quick Unmerge */}
+          {(bill.isMerged || (bill.originalBills && bill.originalBills.length > 0)) && (
+            <div className="bg-gradient-to-r from-purple-50 via-purple-50/80 to-purple-100/50 border border-purple-200 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-purple-950">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-600 text-white font-bold flex items-center justify-center shrink-0 shadow-xs">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-purple-950 flex items-center gap-1.5">
+                    <span>🔗 บิลนี้เป็นบิลรวม (Merged Bill)</span>
+                    <span className="text-[10px] bg-purple-200 text-purple-900 px-1.5 py-0.2 rounded font-bold">
+                      {bill.originalBills?.length ? `${bill.originalBills.length} บิล` : 'รวมรายการ'}
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-purple-700">
+                    {bill.originalBills && bill.originalBills.length > 0
+                      ? `รวมจากบิล: ${bill.originalBills.map((b) => `#${b.billNumber}`).join(', ')}`
+                      : 'สามารถปรับแก้รายการช่าง/ราคา หรือกดยกเลิกรวมบิลเพื่อแยกกลับเป็นบิลเดิมได้'}
+                  </p>
+                </div>
+              </div>
+
+              {onUnmergeBill && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`ต้องการยกเลิกรวมบิล #${bill.billNumber} และแยกกลับเป็นบิลเดิมทั้งหมดใช่หรือไม่?`)) {
+                      onUnmergeBill(bill);
+                      onClose();
+                    }
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs whitespace-nowrap shrink-0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>↩️ แยกบิลกลับ (ยกเลิกรวม)</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* 1. PAYMENT METHOD SWITCHER (Main Requirement) */}
           <div className="bg-amber-50/70 border border-amber-200/90 rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -310,7 +354,7 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                 type="text"
                 value={memberName}
                 onChange={(e) => setMemberName(e.target.value)}
-                placeholder="เช่น ลูกค้าทั่วไป หรือชื่อลูกค้า"
+                placeholder="กรุณากรอกชื่อลูกค้า"
                 className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-amber-400 focus:bg-white"
               />
             </div>

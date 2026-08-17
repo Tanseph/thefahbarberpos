@@ -139,6 +139,8 @@ export interface Bill {
   voidReason?: string;
   voidedAt?: string;
   notes?: string;
+  isMerged?: boolean;
+  originalBills?: Bill[];
   createdBy: string;
 }
 
