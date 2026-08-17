@@ -25,6 +25,7 @@ interface HeaderProps {
   activeStaffId?: string;
   onSelectStaff?: (staffId: string) => void;
   onRequestPinLock?: () => void;
+  isAuthenticatedAdmin?: boolean;
   todaySalesTotal?: number;
   isCloudConnected?: boolean;
   currentAccountEmail?: string | null;
@@ -37,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   settings,
   onRequestPinLock,
+  isAuthenticatedAdmin = false,
   todaySalesTotal = 0,
   isCloudConnected = true,
   currentAccountEmail,
@@ -209,15 +211,25 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
-          {/* PIN Lock */}
-          {settings.isPinProtected && (
+          {/* PIN Lock / Admin Status */}
+          {isAuthenticatedAdmin ? (
             <button
               id="header-pin-lock-button"
               onClick={onRequestPinLock}
-              className="p-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl border border-stone-200 transition cursor-pointer"
-              title="PIN Admin"
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-950 rounded-full border border-amber-300 transition cursor-pointer text-xs font-extrabold shadow-2xs"
+              title="สิทธิ์ผู้ดูแลระบบเปิดอยู่ (คลิกเพื่อล็อคความปลอดภัย)"
             >
-              <Shield className="w-4 h-4" />
+              <Shield className="w-3.5 h-3.5 text-amber-700" />
+              <span>🔓 แอดมิน (คลิกล็อค)</span>
+            </button>
+          ) : (
+            <button
+              id="header-pin-lock-button"
+              onClick={() => setActiveTab('SETTINGS')}
+              className="p-1.5 bg-stone-100/80 hover:bg-stone-200 text-stone-600 hover:text-stone-900 rounded-xl border border-stone-200/80 transition cursor-pointer shadow-2xs"
+              title="ระบบความปลอดภัย PIN แอดมิน"
+            >
+              <Shield className="w-4 h-4 text-stone-500" />
             </button>
           )}
         </div>
@@ -235,6 +247,7 @@ export const Header: React.FC<HeaderProps> = ({
         <nav className="max-w-7xl mx-auto flex items-center gap-1.5 px-4 sm:px-6 py-1.5 overflow-x-auto scrollbar-none">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
+            const isProtected = (item.id === 'SETTINGS' || item.id === 'SALARY') && !isAuthenticatedAdmin;
             return (
               <button
                 id={`header-nav-tab-${item.id.toLowerCase()}`}
@@ -257,6 +270,11 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <span className="text-sm">{item.emoji}</span>
                 <span>{item.label}</span>
+                {isProtected && (
+                  <span className="text-[10px] text-stone-400 font-mono" title="ต้องใส่รหัส PIN ก่อนเข้า">
+                    🔒
+                  </span>
+                )}
               </button>
             );
           })}

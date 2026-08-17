@@ -173,12 +173,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   // Handle save Admin PIN
   const handleSavePin = () => {
+    const pinToSave = (formData.adminPin || '').trim();
+    if (pinToSave.length < 4) {
+      showToast('รหัส PIN ต้องมี 4-6 หลัก', 'กรุณากรอกรหัส PIN เป็นตัวเลขอย่างน้อย 4 หลัก', 'warning');
+      return;
+    }
     setIsSavingPin(true);
-    onSaveSettings(formData);
+    const updatedSettings: StoreSettings = {
+      ...formData,
+      adminPin: pinToSave,
+      isPinProtected: true,
+    };
+    setFormData(updatedSettings);
+    onSaveSettings(updatedSettings);
 
     setTimeout(() => {
       setIsSavingPin(false);
-      showToast('บันทึกรหัส PIN สำเร็จ!', 'รหัส PIN ความปลอดภัยถูกอัปเดตเรียบร้อยแล้ว', 'success', true);
+      showToast('บันทึกรหัส PIN สำเร็จ!', `รหัส PIN ความปลอดภัย (${pinToSave}) ถูกอัปเดตเรียบร้อยแล้ว`, 'success', true);
     }, 350);
   };
 

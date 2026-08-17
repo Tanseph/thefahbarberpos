@@ -220,11 +220,18 @@ export default function App() {
       tab === 'SALARY_SLIPS' ? 'SALARY' : 
       (tab as typeof activeTab);
 
-    if ((normalizedTab === 'SETTINGS' || normalizedTab === 'SALARY') && settings.isPinProtected && !isAuthenticatedAdmin) {
+    // Require PIN verification for SETTINGS and SALARY whenever admin is not authenticated
+    if ((normalizedTab === 'SETTINGS' || normalizedTab === 'SALARY') && !isAuthenticatedAdmin) {
       setPinTargetTab(normalizedTab as 'SETTINGS' | 'SALARY');
       setIsPinModalOpen(true);
       return;
     }
+
+    // When navigating away to normal operational tabs (POS, Reports, etc.), lock admin state
+    if (normalizedTab !== 'SETTINGS' && normalizedTab !== 'SALARY') {
+      setIsAuthenticatedAdmin(false);
+    }
+
     setActiveTab(normalizedTab);
   };
 
@@ -234,6 +241,13 @@ export default function App() {
     if (pinTargetTab) {
       setActiveTab(pinTargetTab);
       setPinTargetTab(null);
+    }
+  };
+
+  const handleRequestPinLock = () => {
+    setIsAuthenticatedAdmin(false);
+    if (activeTab === 'SETTINGS' || activeTab === 'SALARY') {
+      setActiveTab('POS');
     }
   };
 
@@ -521,6 +535,8 @@ export default function App() {
         barbers={barbers}
         activeStaffId={activeStaffId}
         onSelectStaff={setActiveStaffId}
+        isAuthenticatedAdmin={isAuthenticatedAdmin}
+        onRequestPinLock={handleRequestPinLock}
         isCloudConnected={isCloudConnected}
         currentAccountEmail={accountEmail}
         onSwitchAccount={() => setIsLoginModalOpen(true)}
@@ -651,7 +667,8 @@ export default function App() {
         }}
         onSuccess={handlePinSuccess}
         correctPin={settings.adminPin || '1234'}
-        title="การเข้าถึงส่วนที่มีความสำคัญ (Admin Security)"
+        title={pinTargetTab === 'SETTINGS' ? '🔒 ยืนยันรหัส PIN เข้าสู่หน้าตั้งค่า' : '🔒 ยืนยันรหัส PIN ผู้ดูแลร้าน'}
+        subtitle={`กรุณากรอกรหัส PIN ${settings.adminPin?.length || 4} หลักเพื่อเข้าถึงข้อมูล (รหัสเริ่มต้น: ${settings.adminPin || '1234'})`}
       />
 
       {/* Multi-Account Login / Switch Store Modal */}

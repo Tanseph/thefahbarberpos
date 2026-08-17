@@ -49,7 +49,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   enableSalarySlips: true,
   enableTips: true,
   enableCashDrawer: true,
-  isPinProtected: false,
+  isPinProtected: true,
   adminPin: '1234',
 };
 export const initialSettings = DEFAULT_SETTINGS;

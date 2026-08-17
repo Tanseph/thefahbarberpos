@@ -39,7 +39,12 @@ import {
   Layers,
   ArrowUpRight,
   ArrowDownRight,
-  ShieldCheck
+  ShieldCheck,
+  Trophy,
+  Crown,
+  Activity,
+  Award,
+  Zap
 } from 'lucide-react';
 import { 
   formatCurrency, 
@@ -504,6 +509,79 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     ? monthlyLedger.filter((row) => row.billsCount > 0 || row.expenses > 0)
     : monthlyLedger;
 
+  // --- TOP PERFORMING SERVICES & BUSINESS PULSE AGGREGATION ---
+  const calculateTopServices = (targetBills: Bill[]) => {
+    const completedBills = targetBills.filter((b) => b.status === 'COMPLETED');
+    const serviceMap = new Map<string, {
+      name: string;
+      category: string;
+      revenue: number;
+      count: number;
+      barberNames: Set<string>;
+    }>();
+
+    let totalServiceRevenue = 0;
+    let totalServiceCount = 0;
+
+    completedBills.forEach((b) => {
+      b.items.forEach((item) => {
+        const itemGross = item.isPackageRedemption
+          ? 0
+          : Math.max(0, (item.price * item.quantity) - (item.discount || 0));
+
+        totalServiceRevenue += itemGross;
+        totalServiceCount += item.quantity;
+
+        const serviceName = item.name?.trim() || (item.category === 'HAIRCUT' ? 'ตัดผมมาตรฐาน' : 'บริการทั่วไป');
+        const existing = serviceMap.get(serviceName);
+        if (existing) {
+          existing.revenue += itemGross;
+          existing.count += item.quantity;
+          if (item.barberName) existing.barberNames.add(item.barberName);
+        } else {
+          const barberSet = new Set<string>();
+          if (item.barberName) barberSet.add(item.barberName);
+          serviceMap.set(serviceName, {
+            name: serviceName,
+            category: item.category || 'HAIRCUT',
+            revenue: itemGross,
+            count: item.quantity,
+            barberNames: barberSet,
+          });
+        }
+      });
+    });
+
+    const sortedServices = Array.from(serviceMap.values()).sort(
+      (a, b) => b.revenue - a.revenue || b.count - a.count
+    );
+
+    return {
+      sortedServices,
+      topService: sortedServices[0] || null,
+      runnerUpService: sortedServices[1] || null,
+      thirdService: sortedServices[2] || null,
+      totalServiceRevenue,
+      totalServiceCount,
+    };
+  };
+
+  const monthlyTopServices = calculateTopServices(monthlyBills);
+
+  // Previous Month Revenue Comparison (MoM)
+  const prevMonthDate = new Date(yearNum, monthNum - 2, 1);
+  const prevMonthStr = `${prevMonthDate.getFullYear()}-${(prevMonthDate.getMonth() + 1).toString().padStart(2, '0')}`;
+  const prevMonthBills = bills.filter((b) => b.date.startsWith(prevMonthStr) && b.status === 'COMPLETED');
+  const prevMonthRevenue = prevMonthBills.reduce((sum, b) => sum + b.grandTotal, 0);
+
+  const momRevenueDiff = monthlyFinancials.grandTotalRevenue - prevMonthRevenue;
+  const momRevenuePercent = prevMonthRevenue > 0
+    ? ((momRevenueDiff) / prevMonthRevenue) * 100
+    : null;
+
+  const activeDaysCount = displayedLedger.filter((row) => row.billsCount > 0).length;
+  const dailyAverageRevenue = monthlyFinancials.grandTotalRevenue / Math.max(1, activeDaysCount || 1);
+
   // Filtered daily bills for search
   const filteredDailyBills = dailyBills.filter((b) => {
     if (!billSearchQuery) return true;
@@ -661,6 +739,185 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             <PieChart className="w-3.5 h-3.5 text-amber-600" />
             <span>งบการเงิน & สถิติภาพรวม</span>
           </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* ⚡ EXECUTIVE BUSINESS PULSE SUMMARY CARD (MONTHLY REVENUE & TOP SERVICE)   */}
+      {/* ========================================================================= */}
+      <div className="bg-stone-900 text-stone-100 border border-stone-800 rounded-3xl p-5 sm:p-6 shadow-md relative overflow-hidden">
+        {/* Subtle accent glows */}
+        <div className="absolute -top-16 -right-16 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-4">
+          {/* Header Row of Pulse Card */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-800">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-2.5 w-2.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <h3 className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5 font-sans">
+                <Activity className="w-4 h-4 text-amber-400" />
+                <span>Executive Business Pulse (ภาพรวมชีพจรธุรกิจ & ตัวชี้วัดสำคัญ)</span>
+              </h3>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-stone-400 font-medium">
+              <span>รอบเดือน: <strong className="text-amber-300 font-bold">{formatThaiMonthYear(selectedMonth)}</strong></span>
+              <span className="text-stone-600">•</span>
+              <span>{monthlyFinancials.totalBillsCount} บิลสำเร็จ</span>
+              <span className="text-stone-600">•</span>
+              <span>{monthlyFinancials.totalHeads} หัว</span>
+            </div>
+          </div>
+
+          {/* Dual Main Pulse Cards: Monthly Revenue & Top Performing Service */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* 1. Monthly Revenue Card */}
+            <div className="bg-stone-800/80 border border-stone-700/80 hover:border-amber-500/40 transition rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-3 shadow-inner">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-stone-400 flex items-center gap-1.5">
+                    <DollarSign className="w-4 h-4 text-amber-400" />
+                    <span>Monthly Revenue (รายได้รวมประจำเดือน)</span>
+                  </span>
+                  
+                  <div className="mt-1 flex items-baseline gap-2.5 flex-wrap">
+                    <span className="text-2xl sm:text-3xl font-black text-amber-400 font-mono tracking-tight">
+                      {formatCurrency(monthlyFinancials.grandTotalRevenue)}
+                    </span>
+                    {momRevenuePercent !== null ? (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-md flex items-center gap-0.5 border ${
+                        momRevenuePercent >= 0 
+                          ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' 
+                          : 'bg-rose-950/80 text-rose-300 border-rose-800'
+                      }`}>
+                        {momRevenuePercent >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                        <span>{momRevenuePercent >= 0 ? '+' : ''}{momRevenuePercent.toFixed(1)}% vs เดือนก่อน</span>
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-stone-400 font-medium">
+                        (รอบเดือนปัจจุบัน)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-2xs">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+              </div>
+
+              {/* Sub-metrics breakdown */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-3 border-t border-stone-700/60 text-xs">
+                <div className="bg-stone-900/80 rounded-xl p-2.5 border border-stone-800 space-y-0.5">
+                  <span className="text-[10px] text-stone-400 font-semibold block">กำไรสุทธิ (Net Profit)</span>
+                  <span className="font-mono font-black text-emerald-400 text-sm">
+                    {formatCurrency(monthlyFinancials.netOperatingProfit)}
+                  </span>
+                  <span className="text-[10px] text-emerald-500/90 block font-medium">
+                    (มาร์จิ้น {monthlyFinancials.profitMarginPercent.toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="bg-stone-900/80 rounded-xl p-2.5 border border-stone-800 space-y-0.5">
+                  <span className="text-[10px] text-stone-400 font-semibold block">เงินสด / เงินโอน</span>
+                  <div className="font-mono font-bold text-stone-200 text-xs truncate">
+                    <span className="text-emerald-300">💵 {formatCurrency(monthlyFinancials.cashRevenue)}</span>
+                  </div>
+                  <div className="font-mono font-bold text-stone-300 text-[11px] truncate">
+                    <span className="text-cyan-300">📲 {formatCurrency(monthlyFinancials.transferRevenue)}</span>
+                  </div>
+                </div>
+                <div className="bg-stone-900/80 rounded-xl p-2.5 border border-stone-800 space-y-0.5 col-span-2 sm:col-span-1">
+                  <span className="text-[10px] text-stone-400 font-semibold block">เฉลี่ยต่อวันทำงาน</span>
+                  <span className="font-mono font-bold text-amber-300 text-sm block">
+                    {formatCurrency(dailyAverageRevenue)}
+                  </span>
+                  <span className="text-[10px] text-stone-400 block font-medium">
+                    จาก {activeDaysCount || 1} วันที่มีรายการ
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Top Performing Service Card */}
+            <div className="bg-stone-800/80 border border-stone-700/80 hover:border-amber-500/40 transition rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-3 shadow-inner">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1 w-full">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-stone-400 flex items-center gap-1.5">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <span>Top Performing Service (บริการที่ทำยอดสูงสุด)</span>
+                  </span>
+                  
+                  {monthlyTopServices.topService ? (
+                    <div className="pt-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-lg sm:text-xl font-black text-white tracking-tight">
+                          {monthlyTopServices.topService.name}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-stone-950 flex items-center gap-1 shadow-2xs">
+                          <Crown className="w-3 h-3 text-stone-950 fill-stone-950" />
+                          <span>อันดับ 1</span>
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-stone-700 text-stone-200 border border-stone-600">
+                          {monthlyTopServices.topService.category === 'HAIRCUT' ? '✂️ ตัดผม' : monthlyTopServices.topService.category === 'CHEMICAL' ? '🧪 งานเคมี' : monthlyTopServices.topService.category === 'PRODUCT' ? '🧴 สินค้า' : 'บริการ'}
+                        </span>
+                      </div>
+                      
+                      <div className="mt-1 flex items-baseline gap-3 flex-wrap">
+                        <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">
+                          {formatCurrency(monthlyTopServices.topService.revenue)}
+                        </span>
+                        <span className="text-xs text-stone-300 font-medium">
+                          ยอดขาย <strong className="text-white font-mono font-black">{formatNumber(monthlyTopServices.topService.count)}</strong> ครั้ง/ชิ้น
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-2 text-xs text-stone-400">
+                      ยังไม่มีรายการบริการในรอบเดือนนี้
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-2xs">
+                  <Trophy className="w-5 h-5" />
+                </div>
+              </div>
+
+              {/* Sub-details for Top Service */}
+              {monthlyTopServices.topService && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-3 border-t border-stone-700/60 text-xs">
+                  <div className="bg-stone-900/80 rounded-xl p-2.5 border border-stone-800 space-y-0.5">
+                    <span className="text-[10px] text-stone-400 font-semibold block">สัดส่วนรายได้บริการ</span>
+                    <span className="font-mono font-bold text-amber-300 text-sm">
+                      {monthlyTopServices.totalServiceRevenue > 0 
+                        ? `${((monthlyTopServices.topService.revenue / monthlyTopServices.totalServiceRevenue) * 100).toFixed(1)}%` 
+                        : '0%'}
+                    </span>
+                    <span className="text-[10px] text-stone-500 block">ของยอดบริการทั้งหมด</span>
+                  </div>
+                  <div className="bg-stone-900/80 rounded-xl p-2.5 border border-stone-800 space-y-0.5">
+                    <span className="text-[10px] text-stone-400 font-semibold block">ราคาเฉลี่ย / ครั้ง</span>
+                    <span className="font-mono font-bold text-stone-200 text-sm">
+                      {formatCurrency(monthlyTopServices.topService.count > 0 ? monthlyTopServices.topService.revenue / monthlyTopServices.topService.count : 0)}
+                    </span>
+                    <span className="text-[10px] text-stone-500 block">ต่อการให้บริการ</span>
+                  </div>
+                  <div className="bg-stone-900/80 rounded-xl p-2.5 border border-stone-800 space-y-0.5 col-span-2 sm:col-span-1">
+                    <span className="text-[10px] text-stone-400 font-semibold block">🥈 อันดับ 2 รองลงมา</span>
+                    <span className="font-bold text-stone-300 text-xs truncate block" title={monthlyTopServices.runnerUpService ? `${monthlyTopServices.runnerUpService.name} (${formatCurrency(monthlyTopServices.runnerUpService.revenue)})` : 'ไม่มี'}>
+                      {monthlyTopServices.runnerUpService ? `${monthlyTopServices.runnerUpService.name}` : '-'}
+                    </span>
+                    <span className="text-[10px] font-mono text-stone-400 block truncate">
+                      {monthlyTopServices.runnerUpService ? `${formatCurrency(monthlyTopServices.runnerUpService.revenue)} (${monthlyTopServices.runnerUpService.count} ครั้ง)` : '-'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
