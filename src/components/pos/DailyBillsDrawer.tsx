@@ -24,6 +24,7 @@ import { formatCurrency, formatThaiDate } from '../../utils/formatters';
 import { EditBillModal } from './EditBillModal';
 import { DeleteBillModal } from './DeleteBillModal';
 import { MergeBillsModal } from './MergeBillsModal';
+import { UnmergeConfirmModal } from './UnmergeConfirmModal';
 
 interface DailyBillsDrawerProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ interface DailyBillsDrawerProps {
   onVoidBill: (billId: string, reason: string) => void;
   onUpdateBill?: (bill: Bill) => void;
   onDeleteBill?: (billId: string) => void;
+  onMergeBills?: (updatedBills: Bill[]) => void;
   onUnmergeBill?: (mergedBill: Bill) => void;
   settings?: StoreSettings;
 }
@@ -49,6 +51,7 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
   onVoidBill,
   onUpdateBill,
   onDeleteBill,
+  onMergeBills,
   onUnmergeBill,
   settings,
 }) => {
@@ -61,6 +64,7 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
   
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [deletingBill, setDeletingBill] = useState<Bill | null>(null);
+  const [unmergingBill, setUnmergingBill] = useState<Bill | null>(null);
 
   // Merge Bills Modal State
   const [isMergeBillsModalOpen, setIsMergeBillsModalOpen] = useState<boolean>(false);
@@ -75,12 +79,11 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
     setIsMergeBillsModalOpen(true);
   };
 
-  const handleConfirmMergeBills = (mergedBill: Bill, billIdsToDelete: string[]) => {
-    if (onUpdateBill) {
-      onUpdateBill(mergedBill);
-    }
-    if (onDeleteBill) {
-      billIdsToDelete.forEach((id) => onDeleteBill(id));
+  const handleConfirmMergeBills = (updatedBills: Bill[]) => {
+    if (onMergeBills) {
+      onMergeBills(updatedBills);
+    } else if (onUpdateBill) {
+      updatedBills.forEach((b) => onUpdateBill(b));
     }
   };
 
@@ -277,6 +280,25 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
                     </div>
                   </div>
 
+                  {/* Merged Bill Status Banner */}
+                  {bill.isMerged && (
+                    <div className="bg-purple-50/90 border border-purple-200 rounded-xl px-2.5 py-1.5 text-xs text-purple-950 flex items-center justify-between gap-1 mb-2 shadow-2xs">
+                      <span className="flex items-center gap-1.5 font-bold">
+                        <Layers className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                        <span>
+                          🔗 รวมจ่ายกับบิล {bill.mergedWithBillNumbers && bill.mergedWithBillNumbers.length > 0
+                            ? bill.mergedWithBillNumbers.map((n) => `#${n}`).join(', ')
+                            : 'อื่นในกลุ่ม'}
+                        </span>
+                      </span>
+                      {bill.paymentReference && (
+                        <span className="text-[10px] text-purple-700 font-medium truncate max-w-[160px]">
+                          ({bill.paymentReference})
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   {/* Items summary */}
                   <div className="text-[11px] text-stone-600 bg-white p-2.5 rounded-xl border border-stone-200/70 space-y-0.5 mb-2.5">
                     {bill.items.map((i, idx) => (
@@ -306,13 +328,9 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
                       {(bill.isMerged || (bill.originalBills && bill.originalBills.length > 0)) ? (
                         onUnmergeBill && (
                           <button
-                            onClick={() => {
-                              if (window.confirm(`ต้องการยกเลิกรวมบิล #${bill.billNumber} และแยกกลับเป็นบิลเดิมใช่หรือไม่?`)) {
-                                onUnmergeBill(bill);
-                              }
-                            }}
+                            onClick={() => setUnmergingBill(bill)}
                             className="px-2.5 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 border border-purple-300 text-purple-950 text-xs font-bold flex items-center gap-1 transition cursor-pointer shadow-2xs"
-                            title="แยกบิลนี้กลับเป็นบิลเดิมทั้งหมด"
+                            title="ยกเลิกรวมบิล และแยกกลับเป็นอิสระต่อกัน (มีป๊อปอัพยืนยัน)"
                           >
                             <RotateCcw className="w-3 h-3 text-purple-700" />
                             <span>↩️ แยกบิลกลับ</span>
@@ -378,6 +396,20 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
             })
           )}
         </div>
+
+        {/* Unmerge Confirmation Modal with Dialog Popup */}
+        {unmergingBill && (
+          <UnmergeConfirmModal
+            isOpen={!!unmergingBill}
+            onClose={() => setUnmergingBill(null)}
+            bill={unmergingBill}
+            allBills={bills}
+            onConfirmUnmerge={(b) => {
+              if (onUnmergeBill) onUnmergeBill(b);
+              setUnmergingBill(null);
+            }}
+          />
+        )}
 
         {/* Edit Bill Modal */}
         {editingBill && (

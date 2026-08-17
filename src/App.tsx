@@ -267,37 +267,61 @@ export default function App() {
     }
   };
 
-  const handleUnmergeBill = (mergedBill: Bill) => {
-    // 1. If originalBills are stored, restore them directly
-    if (mergedBill.originalBills && mergedBill.originalBills.length > 0) {
-      handleDeleteBill(mergedBill.id);
-      mergedBill.originalBills.forEach((originalB) => {
-        handleAddBill(originalB);
+  const handleMergeBills = (updatedBills: Bill[]) => {
+    setBills((prev) => {
+      const updatedMap = new Map(updatedBills.map((b) => [b.id, b]));
+      return prev.map((b) => updatedMap.get(b.id) || b);
+    });
+    if (accountEmail) {
+      updatedBills.forEach((b) => saveBillToFirestore(accountEmail, b));
+    }
+  };
+
+  const handleUnmergeBill = (targetBill: Bill) => {
+    // 1. If legacy consolidated bill with originalBills stored
+    if (targetBill.originalBills && targetBill.originalBills.length > 0) {
+      handleDeleteBill(targetBill.id);
+      targetBill.originalBills.forEach((originalB) => {
+        handleAddBill({
+          ...originalB,
+          isMerged: false,
+          mergedGroupId: undefined,
+          mergedWithBillNumbers: undefined,
+          originalBills: undefined,
+        });
       });
       return;
     }
 
-    // 2. Fallback: If no originalBills, split by distinct item into separate bills
-    if (mergedBill.items && mergedBill.items.length > 1) {
-      handleDeleteBill(mergedBill.id);
-      mergedBill.items.forEach((item, idx) => {
-        const itemTotal = item.price * item.quantity;
-        const splitBill: Bill = {
-          ...mergedBill,
-          id: `bill-${Date.now()}-${idx}`,
-          billNumber: `${mergedBill.billNumber.replace(/-M\d+/, '')}-${idx + 1}`,
-          items: [item],
-          subtotal: itemTotal,
-          grandTotal: itemTotal,
-          discountTotal: 0,
-          pointsDiscount: 0,
-          tipAmount: 0,
-          isMerged: false,
-          originalBills: undefined,
-          notes: `[แยกจากบิลรวม ${mergedBill.billNumber}]`,
-        };
-        handleAddBill(splitBill);
-      });
+    // 2. Linked merge bills (separate bills with group link)
+    const groupId = targetBill.mergedGroupId;
+    const targetWithNumbers = targetBill.mergedWithBillNumbers || [];
+
+    const relatedBills = bills.filter(
+      (b) =>
+        (groupId && b.mergedGroupId === groupId) ||
+        b.id === targetBill.id ||
+        (targetWithNumbers.length > 0 && targetWithNumbers.includes(b.billNumber))
+    );
+
+    const billsToUnmerge = relatedBills.length > 0 ? relatedBills : [targetBill];
+
+    const unmergedList: Bill[] = billsToUnmerge.map((b) => ({
+      ...b,
+      isMerged: false,
+      mergedGroupId: undefined,
+      mergedWithBillNumbers: undefined,
+      originalBills: undefined,
+      paymentReference: b.paymentReference && b.paymentReference.startsWith('โอนรวม') ? undefined : b.paymentReference,
+    }));
+
+    setBills((prev) => {
+      const unmergedMap = new Map(unmergedList.map((b) => [b.id, b]));
+      return prev.map((b) => unmergedMap.get(b.id) || b);
+    });
+
+    if (accountEmail) {
+      unmergedList.forEach((b) => saveBillToFirestore(accountEmail, b));
     }
   };
 
@@ -517,6 +541,7 @@ export default function App() {
             onAddBill={handleAddBill}
             onUpdateBill={handleUpdateBill}
             onDeleteBill={handleDeleteBill}
+            onMergeBills={handleMergeBills}
             onUnmergeBill={handleUnmergeBill}
             onVoidBill={handleVoidBill}
             settings={settings}
@@ -581,6 +606,7 @@ export default function App() {
             settings={settings}
             onUpdateBill={handleUpdateBill}
             onDeleteBill={handleDeleteBill}
+            onMergeBills={handleMergeBills}
             onUnmergeBill={handleUnmergeBill}
             onVoidBill={handleVoidBill}
           />

@@ -52,6 +52,7 @@ interface POSViewProps {
   onAddBill: (bill: Bill) => void;
   onUpdateBill?: (bill: Bill) => void;
   onDeleteBill?: (billId: string) => void;
+  onMergeBills?: (updatedBills: Bill[]) => void;
   onUnmergeBill?: (mergedBill: Bill) => void;
   onVoidBill: (billId: string, reason: string) => void;
   settings: StoreSettings;
@@ -80,6 +81,7 @@ export const POSView: React.FC<POSViewProps> = ({
   onAddBill,
   onUpdateBill,
   onDeleteBill,
+  onMergeBills,
   onUnmergeBill,
   onVoidBill,
   settings,
@@ -1458,6 +1460,7 @@ export const POSView: React.FC<POSViewProps> = ({
         onVoidBill={onVoidBill}
         onUpdateBill={onUpdateBill}
         onDeleteBill={onDeleteBill}
+        onMergeBills={onMergeBills}
         onUnmergeBill={onUnmergeBill}
         onSelectBillForReceipt={(bill) => {
           setActiveReceiptBill(bill);

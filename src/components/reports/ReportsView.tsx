@@ -53,6 +53,7 @@ import { ReceiptModal } from '../pos/ReceiptModal';
 import { EditBillModal } from '../pos/EditBillModal';
 import { DeleteBillModal } from '../pos/DeleteBillModal';
 import { MergeBillsModal } from '../pos/MergeBillsModal';
+import { UnmergeConfirmModal } from '../pos/UnmergeConfirmModal';
 import { AccountantPDFModal } from './AccountantPDFModal';
 
 interface ReportsViewProps {
@@ -63,6 +64,7 @@ interface ReportsViewProps {
   settings: StoreSettings;
   onUpdateBill?: (bill: Bill) => void;
   onDeleteBill?: (billId: string) => void;
+  onMergeBills?: (updatedBills: Bill[]) => void;
   onUnmergeBill?: (mergedBill: Bill) => void;
   onVoidBill?: (billId: string, reason: string) => void;
 }
@@ -91,6 +93,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   settings,
   onUpdateBill,
   onDeleteBill,
+  onMergeBills,
   onUnmergeBill,
   onVoidBill,
 }) => {
@@ -110,6 +113,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   // Modals for Bill Edit & Delete
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [deletingBill, setDeletingBill] = useState<Bill | null>(null);
+  const [unmergingBill, setUnmergingBill] = useState<Bill | null>(null);
 
   // Merge Bills Modal State
   const [isMergeBillsModalOpen, setIsMergeBillsModalOpen] = useState<boolean>(false);
@@ -124,12 +128,11 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     setIsMergeBillsModalOpen(true);
   };
 
-  const handleConfirmMergeBills = (mergedBill: Bill, billIdsToDelete: string[]) => {
-    if (onUpdateBill) {
-      onUpdateBill(mergedBill);
-    }
-    if (onDeleteBill) {
-      billIdsToDelete.forEach((id) => onDeleteBill(id));
+  const handleConfirmMergeBills = (updatedBills: Bill[]) => {
+    if (onMergeBills) {
+      onMergeBills(updatedBills);
+    } else if (onUpdateBill) {
+      updatedBills.forEach((b) => onUpdateBill(b));
     }
   };
 
@@ -1221,7 +1224,24 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                       return (
                         <tr key={bill.id} className={`transition ${bill.status === 'VOIDED' ? 'bg-rose-50/50 opacity-60 line-through' : 'hover:bg-stone-50'}`}>
                           <td className="p-2.5 font-bold text-stone-500 font-sans">{timeStr} น.</td>
-                          <td className="p-2.5 font-bold text-stone-900">{bill.billNumber}</td>
+                          <td className="p-2.5 font-bold text-stone-900">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{bill.billNumber}</span>
+                              {bill.isMerged && (
+                                <span
+                                  className="px-1.5 py-0.5 rounded-md text-[9px] bg-purple-100 text-purple-800 font-bold flex items-center gap-0.5 border border-purple-200"
+                                  title={`รวมจ่ายกับบิล ${bill.mergedWithBillNumbers?.map((n) => `#${n}`).join(', ') || ''}`}
+                                >
+                                  <Layers className="w-2.5 h-2.5 text-purple-600 shrink-0" />
+                                  <span>
+                                    {bill.mergedWithBillNumbers && bill.mergedWithBillNumbers.length > 0
+                                      ? `รวม #${bill.mergedWithBillNumbers.join(', #')}`
+                                      : 'รวมบิล'}
+                                  </span>
+                                </span>
+                              )}
+                            </div>
+                          </td>
                           <td className="p-2.5 font-sans font-medium text-stone-800">
                             {bill.memberName || 'ลูกค้าทั่วไป (Walk-in)'}
                           </td>
@@ -1269,13 +1289,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                                 onUnmergeBill && (
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      if (window.confirm(`ต้องการยกเลิกรวมบิล #${bill.billNumber} และแยกกลับเป็นบิลเดิมใช่หรือไม่?`)) {
-                                        onUnmergeBill(bill);
-                                      }
-                                    }}
+                                    onClick={() => setUnmergingBill(bill)}
                                     className="p-1 text-purple-700 hover:text-purple-950 hover:bg-purple-100 rounded-lg transition cursor-pointer"
-                                    title="แยกบิลนี้กลับเป็นบิลเดิมทั้งหมด"
+                                    title="ยกเลิกรวมบิล และแยกกลับเป็นบิลเดิม (มีป๊อปอัพยืนยัน)"
                                   >
                                     <RotateCcw className="w-3.5 h-3.5" />
                                   </button>
@@ -2212,6 +2228,20 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           barbers={barbers}
           onConfirmMerge={handleConfirmMergeBills}
           settings={settings}
+        />
+      )}
+
+      {/* Unmerge Confirmation Modal */}
+      {unmergingBill && (
+        <UnmergeConfirmModal
+          isOpen={!!unmergingBill}
+          onClose={() => setUnmergingBill(null)}
+          bill={unmergingBill}
+          allBills={bills}
+          onConfirmUnmerge={(b) => {
+            if (onUnmergeBill) onUnmergeBill(b);
+            setUnmergingBill(null);
+          }}
         />
       )}
     </div>

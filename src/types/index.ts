@@ -140,6 +140,8 @@ export interface Bill {
   voidedAt?: string;
   notes?: string;
   isMerged?: boolean;
+  mergedGroupId?: string;
+  mergedWithBillNumbers?: string[];
   originalBills?: Bill[];
   createdBy: string;
 }

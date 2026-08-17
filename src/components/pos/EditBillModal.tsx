@@ -21,6 +21,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { UnmergeConfirmModal } from './UnmergeConfirmModal';
 
 interface EditBillModalProps {
   isOpen: boolean;
@@ -42,6 +43,7 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(bill?.paymentMethod || 'CASH');
   const [splitCash, setSplitCash] = useState<number>(bill?.splitCashAmount || 0);
   const [splitTransfer, setSplitTransfer] = useState<number>(bill?.splitTransferAmount || 0);
+  const [isUnmergeModalOpen, setIsUnmergeModalOpen] = useState<boolean>(false);
   
   const [memberName, setMemberName] = useState<string>(bill?.memberName || '');
   const [memberPhone, setMemberPhone] = useState<string>(bill?.memberPhone || '');
@@ -192,15 +194,14 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                 </div>
                 <div>
                   <h4 className="text-xs font-black text-purple-950 flex items-center gap-1.5">
-                    <span>🔗 บิลนี้เป็นบิลรวม (Merged Bill)</span>
-                    <span className="text-[10px] bg-purple-200 text-purple-900 px-1.5 py-0.2 rounded font-bold">
-                      {bill.originalBills?.length ? `${bill.originalBills.length} บิล` : 'รวมรายการ'}
-                    </span>
+                    <span>🔗 บิลนี้ผูกสถานะรวมจ่าย (Merged Bill)</span>
                   </h4>
                   <p className="text-[11px] text-purple-700">
-                    {bill.originalBills && bill.originalBills.length > 0
+                    {bill.mergedWithBillNumbers && bill.mergedWithBillNumbers.length > 0
+                      ? `รวมจ่ายกับบิล: ${bill.mergedWithBillNumbers.map((n) => `#${n}`).join(', ')}`
+                      : bill.originalBills && bill.originalBills.length > 0
                       ? `รวมจากบิล: ${bill.originalBills.map((b) => `#${b.billNumber}`).join(', ')}`
-                      : 'สามารถปรับแก้รายการช่าง/ราคา หรือกดยกเลิกรวมบิลเพื่อแยกกลับเป็นบิลเดิมได้'}
+                      : 'ผูกสถานะชำระเงินร่วมกับบิลอื่น'}
                   </p>
                 </div>
               </div>
@@ -208,12 +209,7 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
               {onUnmergeBill && (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm(`ต้องการยกเลิกรวมบิล #${bill.billNumber} และแยกกลับเป็นบิลเดิมทั้งหมดใช่หรือไม่?`)) {
-                      onUnmergeBill(bill);
-                      onClose();
-                    }
-                  }}
+                  onClick={() => setIsUnmergeModalOpen(true)}
                   className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs whitespace-nowrap shrink-0"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -553,6 +549,20 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Unmerge Confirmation Modal */}
+      {isUnmergeModalOpen && (
+        <UnmergeConfirmModal
+          isOpen={isUnmergeModalOpen}
+          onClose={() => setIsUnmergeModalOpen(false)}
+          bill={bill}
+          onConfirmUnmerge={(b) => {
+            if (onUnmergeBill) onUnmergeBill(b);
+            setIsUnmergeModalOpen(false);
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 };
