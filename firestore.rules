@@ -1,9 +1,56 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Single-store POS: All store devices & partners share access to all collections
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Default deny catch-all
     match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection test document
+    match /test/connection {
       allow read, write: if true;
+    }
+
+    // Shop Workspace & Settings
+    match /shops/{shopId} {
+      allow get, list: if isValidId(shopId);
+      allow create, update, delete: if isValidId(shopId);
+
+      // Barbers Subcollection
+      match /barbers/{barberId} {
+        allow get, list: if isValidId(shopId);
+        allow create, update, delete: if isValidId(shopId) && isValidId(barberId);
+      }
+
+      // Products Subcollection
+      match /products/{productId} {
+        allow get, list: if isValidId(shopId);
+        allow create, update, delete: if isValidId(shopId) && isValidId(productId);
+      }
+
+      // Bills / Sales Subcollection
+      match /bills/{billId} {
+        allow get, list: if isValidId(shopId);
+        allow create, update, delete: if isValidId(shopId) && isValidId(billId);
+      }
+
+      // Expenses Subcollection
+      match /expenses/{expenseId} {
+        allow get, list: if isValidId(shopId);
+        allow create, update, delete: if isValidId(shopId) && isValidId(expenseId);
+      }
+
+      // Queues Subcollection
+      match /queues/{queueId} {
+        allow get, list: if isValidId(shopId);
+        allow create, update, delete: if isValidId(shopId) && isValidId(queueId);
+      }
     }
   }
 }

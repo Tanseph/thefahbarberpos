@@ -1,326 +1,215 @@
-export type MemberTier = 'MEMBER' | 'VIP_GOLD' | 'PLATINUM' | 'SILVER' | 'GOLD' | 'DIAMOND' | string;
+export type PaymentMethod = 'transfer' | 'cash' | 'split';
 
-export interface Member {
-  id: string;
+export type TabType = 'pos' | 'dashboard' | 'queue' | 'expenses' | 'settings';
+
+export type QueueStatus = 'waiting' | 'in_progress' | 'completed' | 'cancelled';
+
+export type ExpenseCategory =
+  | 'rent'
+  | 'utilities'
+  | 'stock_supplies'
+  | 'chemicals_color'
+  | 'tools_equipment'
+  | 'disposables'
+  | 'laundry_cleaning'
+  | 'hospitality'
+  | 'staff_meals'
+  | 'advance_wages'
+  | 'marketing_ads'
+  | 'internet_software'
+  | 'maintenance_repair'
+  | 'decor_ambience'
+  | 'shipping_delivery'
+  | 'tax_accounting'
+  | 'travel_fuel'
+  | 'staff_wages'
+  | 'marketing'
+  | 'shipping'
+  | 'other';
+
+export interface ExpenseCategoryMeta {
+  id: ExpenseCategory;
   name: string;
-  nickname?: string;
-  phone: string;
-  birthday?: string;
-  gender?: 'M' | 'F' | 'OTHER';
-  tier: MemberTier;
-  packageLevel?: string; // ระดับที่ซื้อแพ็กเกจ เช่น Silver, Gold, Platinum, VIP
-  balance: number; // จำนวนเงินคงเหลือในกระเป๋า/แพ็กเกจ
-  points: number;
-  totalSpent: number;
-  visitCount: number;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  packages?: MemberPackage[];
+  nameEn: string;
+  icon: string;
+  color: string;
+  textColor: string;
+  borderColor: string;
 }
 
-export interface MemberPackage {
+export interface ShopExpense {
   id: string;
-  packageId: string;
-  packageName: string;
-  totalSessions?: number;
-  remainingSessions?: number;
-  purchaseDate: string;
-  expiryDate?: string;
-  pricePaid: number;
-  receivedValue?: number;
+  expenseNumber: string; // e.g. EXP260818-001
+  timestamp: number;
+  dateStr: string; // YYYY-MM-DD
+  timeStr: string; // HH:mm
+  category: ExpenseCategory;
+  title: string;
+  amount: number;
+  paymentMethod: 'cash' | 'transfer';
+  payee?: string;
+  recordedBy?: string;
   notes?: string;
-}
-
-export interface PackageTemplate {
-  id: string;
-  name: string;
-  description: string;
-  level: string; // ระดับไหน เช่น 'Silver', 'Gold', 'Platinum', 'VIP', 'Diamond'
-  price: number; // ราคาที่จ่าย
-  receivedValue: number; // ราคาที่ได้รับ (มูลค่าเครดิตในแพ็กเกจ)
-  colorTheme: string; // ธีมสีสัน เช่น 'emerald', 'blue', 'amber', 'purple', 'rose', 'cyan', 'indigo', 'orange'
-  serviceId?: string;
-  totalSessions?: number;
-  originalValue?: number;
-  validityDays?: number;
-  isActive: boolean;
+  receiptImg?: string;
+  referenceNo?: string;
 }
 
 export interface Barber {
   id: string;
   name: string;
   nickname: string;
-  phone: string;
-  avatar?: string;
-  color?: string;
-  employeeCode?: string;
-  idCardNumber?: string;
-  bankName?: string;
-  bankAccountNumber?: string;
-  positionTitle?: string;
-  department?: string;
-  startDate?: string;
-  baseSalary?: number;
-  baseSalaryGuarantee?: number;
-  minGuarantee?: number;
-  serviceComRate?: number;
-  productComRate?: number;
-  haircutCommissionRate?: number;
-  chemicalCommissionRate?: number;
-  productCommissionRate?: number;
-  roleAllowance?: number;
-  isActive: boolean;
+  avatar: string; // URL or emoji/preset
+  phone?: string;
+  color: string; // hex or tailwind class
+  haircutCommissionRate: number; // e.g. 50 (%)
+  chemicalCommissionRate: number; // e.g. 50 (%)
+  productCommissionRate: number; // e.g. 10 (%)
+  tipRate: number; // e.g. 100 (%)
+  active: boolean;
   notes?: string;
 }
 
-export type ItemCategory = 'HAIRCUT' | 'CHEMICAL' | 'PRODUCT' | 'PACKAGE' | 'OTHER';
-export type ServiceCategory = ItemCategory;
-
-export interface ServiceItem {
+export interface ProductItem {
   id: string;
-  code?: string;
   name: string;
-  category: ItemCategory;
+  category: string;
   price: number;
-  cost?: number;
-  durationMinutes: number;
-  customCommissionRate?: number;
-  stock?: number;
-  trackStock?: boolean;
+  stock: number;
+  unit: string;
   image?: string;
-  description?: string;
-  isActive: boolean;
 }
 
-export interface CartItem {
-  id: string;
-  serviceId: string;
+export interface BillProductItem {
+  productId: string;
   name: string;
-  category: ItemCategory;
   price: number;
   quantity: number;
-  discount: number;
-  barberId: string;
-  barberName: string;
-  isPackageRedemption?: boolean;
-  memberPackageId?: string;
+  total: number;
 }
 
-export type PaymentMethod = 'CASH' | 'TRANSFER' | 'SPLIT' | 'MEMBER' | 'PROMPTPAY' | 'CREDIT_CARD';
-
-export interface Bill {
-  id: string;
-  billNumber: string;
-  date: string;
-  customerType: 'GUEST' | 'MEMBER';
-  memberId?: string;
-  memberName?: string;
-  memberPhone?: string;
-  items: CartItem[];
-  subtotal: number;
-  discountTotal: number;
-  pointsDiscount: number;
-  pointsRedeemed?: number;
-  pointsEarned: number;
-  tipAmount: number;
-  tipBarberId?: string;
-  grandTotal: number;
-  paymentMethod: PaymentMethod;
-  cashReceived?: number;
-  cashChange?: number;
-  splitCashAmount?: number;
-  splitTransferAmount?: number;
-  paymentReference?: string;
-  memberDeductedAmount?: number; // ยอดที่หักจากยอดเงินสมาชิก
-  memberBalanceBefore?: number; // ยอดคงเหลือก่อนหัก
-  memberBalanceAfter?: number; // ยอดคงเหลือหลังหัก
-  status: 'COMPLETED' | 'VOIDED';
-  voidReason?: string;
-  voidedAt?: string;
-  notes?: string;
-  isMerged?: boolean;
-  mergedGroupId?: string;
-  mergedWithBillNumbers?: string[];
-  originalBills?: Bill[];
-  createdBy: string;
+export interface BillCommission {
+  barberHaircutEarned: number;
+  barberChemicalEarned: number;
+  barberProductEarned: number;
+  barberTipEarned: number;
+  barberTotalEarned: number;
+  shopNetEarned: number;
 }
 
-export type ExpenseCategory = 
-  | 'UTILITIES' 
-  | 'CHEMICALS_EQUIPMENT' 
-  | 'SUPPLIES'
-  | 'RENT' 
-  | 'BARBER_ADVANCE' 
-  | 'SALARY_DRAW'
-  | 'FOOD_WELFARE' 
-  | 'SNACK_DRINK'
-  | 'MAINTENANCE'
-  | 'MARKETING'
-  | 'OTHER';
-
-export interface Expense {
+export interface BillHeadDetail {
   id: string;
-  title: string;
-  category: ExpenseCategory;
-  amount: number;
-  date: string;
-  payer?: string;
-  paidTo?: string;
-  paymentMethod: 'CASH' | 'TRANSFER';
+  label: string; // e.g. "ท่านที่ 1 (พ่อ)", "ท่านที่ 2 (ลูกคนโต)", "ท่านที่ 3 (ลูกคนเล็ก)"
+  haircutFee: number;
+  chemicalFee: number;
   barberId?: string;
   barberName?: string;
-  receiptNote?: string;
-  note?: string;
-  notes?: string;
-  recordedBy?: string;
-  createdAt: string;
-}
-
-export interface CashTransaction {
-  id: string;
-  type: 'OPENING' | 'CASH_IN' | 'CASH_OUT' | 'SALE' | 'EXPENSE' | 'CLOSING';
-  amount: number;
-  reason: string;
-  date: string;
-  staffName: string;
-  billId?: string;
-  expenseId?: string;
-}
-
-export interface CashDrawerMovement {
-  id: string;
-  type: 'CASH_IN' | 'CASH_OUT';
-  amount: number;
-  reason: string;
-  staffName?: string;
-  performedBy?: string;
-  timestamp: string;
-}
-
-export interface CashDrawerSummary {
-  date: string;
-  openingFloat: number;
-  cashSales: number;
-  cashInTotal: number;
-  cashOutTotal: number;
-  cashExpenses: number;
-  expectedBalance: number;
-  actualCounted?: number;
-  difference?: number;
-  status: 'OPEN' | 'CLOSED';
-  movements?: CashDrawerMovement[];
-  openedAt?: string;
-  openedBy?: string;
-  closedAt?: string;
-  closedBy?: string;
   notes?: string;
 }
 
-export interface SalarySlip {
+export interface UserSession {
+  email: string;
+  shopId: string;
+  loginTime: number;
+}
+
+export interface SaleBill {
   id: string;
+  billNumber: string;
+  timestamp: number; // ms
+  dateStr: string; // YYYY-MM-DD
+  timeStr: string; // HH:mm
   barberId: string;
   barberName: string;
-  barberNickname?: string;
-  employeeCode?: string;
-  idCardNumber?: string;
-  bankName?: string;
-  bankAccountNumber?: string;
-  positionTitle?: string;
-  department?: string;
-  startDate?: string;
-  month: string;
-  period?: string;
-  issueDate?: string;
-  paymentDate?: string;
-  paymentMethod?: 'BANK_TRANSFER' | 'CASH' | string;
-  
-  // Earnings (รายได้)
-  baseSalary: number; // ฐานเงินเดือนการันตี
-  minGuarantee?: number; // ยอดประกันรายได้ขั้นต่ำ
-  headsCount?: number; // จำนวนหัวที่ให้บริการ
-  haircutSalesTotal?: number; // ยอดขายบริการตัดผม
-  haircutComPercent?: number; // % คอมมิชชั่นตัดผม
-  haircutCommission?: number; // ค่าคอมมิชชั่นตัดผม
-  chemicalSalesTotal?: number; // ยอดขายบริการเคมี
-  chemicalComPercent?: number; // % คอมมิชชั่นเคมี
-  chemicalCommission?: number; // ค่าคอมมิชชั่นเคมี
-  serviceSalesTotal: number;
-  serviceComPercent: number;
-  serviceCommission: number;
-  productSalesTotal: number;
-  productComPercent: number;
-  productCommission: number;
-  guaranteeTopup: number; // ส่วนเติมเต็มการันตีเงินเดือน
-  overtimePay?: number; // ค่าล่วงเวลา (OT)
-  attendanceBonus?: number; // เบี้ยขยัน
-  positionAllowance?: number; // ค่าตำแหน่ง / ทักษะพิเศษ
-  transportAllowance?: number; // ค่าเดินทาง / เบี้ยเลี้ยง
-  specialBonus?: number; // เงินรางวัล / โบนัสพิเศษ
-  tipTotal: number; // เงินทิปจากลูกค้า
-  otherEarnings?: number; // รายได้อื่นๆ
-  otherEarningsDescription?: string; // รายละเอียดรายได้อื่นๆ
-  
-  // Deductions (รายการหัก)
-  advanceDeduction: number; // หักเงินเบิกล่วงหน้า
-  socialSecurity: number; // หักประกันสังคม
-  taxPercent?: number; // % ภาษีหัก ณ ที่จ่าย (เช่น 0%, 1%, 3%, 5%)
-  taxDeduction: number; // หักภาษี ณ ที่จ่าย
-  providentFund?: number; // กองทุนสำรองเลี้ยงชีพ / กองทุนสะสม
-  lateAbsenceDeduction?: number; // หักขาดงาน / มาสาย
-  uniformToolDeduction?: number; // หักค่าเครื่องแบบ / อุปกรณ์ / ค่าปรับ
-  otherDeduction: number; // หักอื่นๆ
-  otherDeductionDescription?: string; // รายละเอียดรายการหักอื่นๆ
-  
-  // Summary (สรุปยอด)
-  grossEarnings: number;
-  totalDeductions: number;
-  netPayable: number;
-  
-  status: 'PENDING' | 'PAID' | 'DRAFT';
-  paidAt?: string;
+  customerName: string;
+  customerPhone?: string;
+  headCount?: number; // legacy/optional
+  haircutFee: number;
+  chemicalFee: number;
+  tipFee: number;
+  products: BillProductItem[];
+  totalProductsFee: number;
+  grossTotal: number;
+  paymentMethod: PaymentMethod;
+  cashAmount: number;
+  transferAmount: number;
+  commission: BillCommission;
   notes?: string;
+  queueId?: string; // if created from queue
+  // Merged / Grouped Bills Properties
+  mergedGroupId?: string; // Group identifier e.g. "grp-1712345678"
+  mergedGroupName?: string; // Custom label or "3 รายการนี้ รวมกัน"
+  isMergeMaster?: boolean; // Primary payer bill
+  mergedBillCount?: number; // Total count of bills in group
+  mergedTotalAmount?: number; // Combined total sum across the grouped bills
 }
 
-export interface StoreSettings {
-  storeName: string;
-  storeSlogan: string;
-  address: string;
-  phone: string;
-  taxId: string;
-  logoUrl?: string;
-  promptPayId: string;
-  promptPayName: string;
-  receiptFooterMessage: string;
-  currency: string;
-  
-  // Store-wide Global Commission Rates
-  haircutCommissionRate: number; // % ค่าตัดรวมทั้งร้าน เช่น 50%
-  chemicalCommissionRate: number; // % ค่าเคมีรวมทั้งร้าน เช่น 40%
-  productCommissionRate: number; // % ค่าขายสินค้ารวมทั้งร้าน เช่น 10%
-
-  enablePoints?: boolean;
-  bahtPerPoint?: number;
-  pointDiscountValue?: number;
-  
-  brandColor?: string; // รหัสสีประจำแบรนด์ เช่น #D97706, #059669, #2563EB
-  brandHeaderStyle?: 'light' | 'brand' | 'dark'; // สไตล์สีพื้นหลังของแถบ Header
-
-  enableSalarySlips?: boolean;
-  enableTips?: boolean;
-  enableCashDrawer?: boolean;
-
-  isPinProtected?: boolean;
-  adminPin: string;
+export interface QueueBooking {
+  id: string;
+  queueNumber: string;
+  barberId: string;
+  barberName: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  customerName: string;
+  customerPhone: string;
+  serviceType: string;
+  notes?: string;
+  status: QueueStatus;
+  isLeaveOrBlocked?: boolean;
+  leaveReason?: string;
+  createdBillId?: string;
+  createdAt: number;
 }
 
-export type ActiveTab = 
-  | 'POS' 
-  | 'REPORTS' 
-  | 'MEMBERS' 
-  | 'EXPENSES' 
-  | 'CASH_DRAWER' 
-  | 'DRAWER'
-  | 'SALARY'
-  | 'SALARY_SLIPS' 
-  | 'SETTINGS';
+export type ThemeKey = 
+  | 'professional-polish'
+  | 'luxury-gold' 
+  | 'charcoal-classic' 
+  | 'modern-sage' 
+  | 'midnight-indigo' 
+  | 'warm-amber' 
+  | 'ruby-luxury';
+
+export interface ThemeConfig {
+  id: ThemeKey;
+  name: string;
+  nameEn: string;
+  description: string;
+  badge: string;
+  isDark?: boolean;
+  bgMain: string;
+  bgCard: string;
+  bgCardHover: string;
+  borderSubtle: string;
+  borderActive: string;
+  primary: string;
+  primaryHover: string;
+  primaryLight: string;
+  primaryText: string;
+  accent: string;
+  headerBg: string;
+  tabActiveBg: string;
+  tabActiveText: string;
+  colorSwatch: string;
+  inputBg?: string;
+  textHeading?: string;
+  textMuted?: string;
+  cardInnerBg?: string;
+}
+
+export interface ShopSettings {
+  shopName: string;
+  shopPhone: string;
+  shopAddress: string;
+  shopPromptPay?: string;
+  logoUrl: string;
+  currencySymbol: string;
+  defaultHaircutCommission: number; // 50%
+  defaultChemicalCommission: number; // 50%
+  defaultProductCommission: number; // 10%
+  defaultTipPolicy: number; // 100%
+  queueSlotDuration: number; // 30, 45, 60, 90 mins
+  themeId: ThemeKey;
+  receiptFooterMsg: string;
+}

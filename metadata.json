@@ -1,6 +1,6 @@
 {
-  "name": "BarberShop POS & Management System",
-  "description": "ระบบ POS และบริหารจัดการร้านตัดผมชาย ซาลอน ช่างตัดผม คำนวณเงินเดือน สลิปเงินเดือน สมาชิก และสต็อกสินค้าครบวงจร",
+  "name": "BarberPOS - ระบบบันทึกยอดขายร้านตัดผม",
+  "description": "ระบบจัดการร้านตัดผม POS บันทึกยอดขาย แดชบอร์ดรายได้คำนวณส่วนแบ่งช่าง จองคิว และตั้งค่าครบวงจร",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
