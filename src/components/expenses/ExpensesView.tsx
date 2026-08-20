@@ -115,7 +115,6 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       amount: 0,
       paymentMethod: 'CASH',
       date: getTodayDateString(),
-      paidTo: '',
       note: '',
     });
     setIsModalOpen(true);
@@ -388,7 +387,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 <th className="p-3.5 pl-5">วันที่</th>
                 <th className="p-3.5">หมวดหมู่</th>
                 <th className="p-3.5">รายการค่าใช้จ่าย</th>
-                <th className="p-3.5">จ่ายให้ / หมายเหตุ</th>
+                <th className="p-3.5">หมายเหตุ</th>
                 <th className="p-3.5">ชำระด้วย</th>
                 <th className="p-3.5 text-right">จำนวนเงิน</th>
                 <th className="p-3.5 pr-5 text-right">จัดการ</th>
@@ -418,8 +417,13 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                       </td>
                       <td className="p-3.5 font-bold text-stone-900">{exp.title}</td>
                       <td className="p-3.5 text-stone-600">
-                        {exp.paidTo && <span className="text-stone-900 block font-medium">{exp.paidTo}</span>}
-                        {exp.note && <span className="text-[10px] text-stone-400 italic block">{exp.note}</span>}
+                        {exp.note ? (
+                          <span className="text-stone-700 font-medium block">{exp.note}</span>
+                        ) : exp.paidTo ? (
+                          <span className="text-stone-500 block">{exp.paidTo}</span>
+                        ) : (
+                          <span className="text-stone-300">-</span>
+                        )}
                       </td>
                       <td className="p-3.5 text-stone-600 whitespace-nowrap">
                         {exp.paymentMethod === 'CASH' && '💵 เงินสด (ในเก๊ะ)'}
@@ -548,17 +552,6 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     <option value="CREDIT_CARD">💳 บัตรเครดิต</option>
                   </select>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">จ่ายให้ใคร / ร้านค้า</label>
-                <input
-                  type="text"
-                  value={editingExpense.paidTo || ''}
-                  onChange={(e) => setEditingExpense({ ...editingExpense, paidTo: e.target.value })}
-                  placeholder="เช่น บจก. ซาลอนซัพพลาย, การไฟฟ้านครหลวง, ช่างบอย..."
-                  className="w-full bg-stone-50 border border-stone-300 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none"
-                />
               </div>
 
               <div>

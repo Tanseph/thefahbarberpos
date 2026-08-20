@@ -1384,8 +1384,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     type="number"
                     min="0"
                     required
-                    value={editingService.price || 0}
-                    onChange={(e) => setEditingService({ ...editingService, price: parseFloat(e.target.value) || 0 })}
+                    value={editingService.price !== undefined ? editingService.price : ''}
+                    onChange={(e) => setEditingService({ ...editingService, price: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+                    placeholder="เช่น 350"
                     className="w-full bg-stone-50 border border-stone-300 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-amber-900 font-mono font-bold"
                   />
                 </div>

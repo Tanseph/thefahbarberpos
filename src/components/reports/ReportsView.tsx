@@ -1233,7 +1233,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                             <div>
                               <span className="text-stone-800 font-medium block">{exp.title}</span>
                               <span className="text-[10px] text-stone-400">
-                                {catInfo.label} • {exp.paymentMethod === 'CASH' ? '💵 เงินสด' : '📱 เงินโอน'} {exp.paidTo ? `• จ่ายให้: ${exp.paidTo}` : ''}
+                                {catInfo.label} • {exp.paymentMethod === 'CASH' ? '💵 เงินสด' : '📱 เงินโอน'} {exp.note ? `• ${exp.note}` : exp.paidTo ? `• ${exp.paidTo}` : ''}
                               </span>
                             </div>
                           </div>

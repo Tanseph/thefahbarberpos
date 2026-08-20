@@ -25,8 +25,8 @@ export const PackageManagementModal: React.FC<PackageManagementModalProps> = ({
   const [level, setLevel] = useState('Silver');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState(1000);
-  const [receivedValue, setReceivedValue] = useState(1200);
+  const [priceInput, setPriceInput] = useState<string>('');
+  const [receivedValueInput, setReceivedValueInput] = useState<string>('');
   const [colorTheme, setColorTheme] = useState('slate');
 
   if (!isOpen) return null;
@@ -36,8 +36,8 @@ export const PackageManagementModal: React.FC<PackageManagementModalProps> = ({
     setLevel('Silver');
     setName('');
     setDescription('');
-    setPrice(1000);
-    setReceivedValue(1200);
+    setPriceInput('');
+    setReceivedValueInput('');
     setColorTheme('slate');
     setIsEditing(true);
   };
@@ -47,8 +47,8 @@ export const PackageManagementModal: React.FC<PackageManagementModalProps> = ({
     setLevel(pkg.level || 'Silver');
     setName(pkg.name);
     setDescription(pkg.description || '');
-    setPrice(pkg.price);
-    setReceivedValue(pkg.receivedValue || pkg.price);
+    setPriceInput(pkg.price > 0 ? pkg.price.toString() : '');
+    setReceivedValueInput((pkg.receivedValue || pkg.price) > 0 ? (pkg.receivedValue || pkg.price).toString() : '');
     setColorTheme(pkg.colorTheme || 'amber');
     setIsEditing(true);
   };
@@ -57,13 +57,16 @@ export const PackageManagementModal: React.FC<PackageManagementModalProps> = ({
     e.preventDefault();
     if (!name.trim()) return;
 
+    const parsedPrice = parseFloat(priceInput) || 0;
+    const parsedReceivedValue = parseFloat(receivedValueInput) || parsedPrice;
+
     const newPkg: PackageTemplate = {
       id: editingId || `pkg-${Date.now()}`,
       name: name.trim(),
       description: description.trim(),
       level: level.trim() || 'Silver',
-      price: Number(price) || 0,
-      receivedValue: Number(receivedValue) || Number(price),
+      price: parsedPrice,
+      receivedValue: parsedReceivedValue,
       colorTheme: colorTheme || 'amber',
       isActive: true,
     };
@@ -173,10 +176,10 @@ export const PackageManagementModal: React.FC<PackageManagementModalProps> = ({
                     type="number"
                     min="0"
                     required
-                    value={price}
-                    onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                    placeholder="1000"
-                    className="w-full bg-stone-50 border border-stone-300 focus:border-stone-500 rounded-xl px-3 py-2 text-sm text-stone-900 font-black font-mono focus:outline-none"
+                    value={priceInput}
+                    onChange={(e) => setPriceInput(e.target.value)}
+                    placeholder="เช่น 1000"
+                    className="w-full bg-stone-50 border border-stone-300 focus:border-amber-500 rounded-xl px-3 py-2 text-sm text-stone-900 font-black font-mono focus:outline-none"
                   />
                   <span className="text-[11px] text-stone-400 mt-1 block">
                     จำนวนเงินจริงที่ลูกค้าต้องชำระ
@@ -191,13 +194,20 @@ export const PackageManagementModal: React.FC<PackageManagementModalProps> = ({
                     type="number"
                     min="0"
                     required
-                    value={receivedValue}
-                    onChange={(e) => setReceivedValue(parseFloat(e.target.value) || 0)}
-                    placeholder="1200"
+                    value={receivedValueInput}
+                    onChange={(e) => setReceivedValueInput(e.target.value)}
+                    placeholder="เช่น 1200"
                     className="w-full bg-emerald-50/60 border border-emerald-300 focus:border-emerald-500 rounded-xl px-3 py-2 text-sm text-emerald-950 font-black font-mono focus:outline-none"
                   />
                   <span className="text-[11px] text-emerald-600 mt-1 block font-bold">
-                    โบนัสที่ได้รับเพิ่ม: +{formatCurrency(Math.max(0, receivedValue - price))}
+                    {(() => {
+                      const numP = parseFloat(priceInput) || 0;
+                      const numR = parseFloat(receivedValueInput) || 0;
+                      const bonus = Math.max(0, numR - numP);
+                      return bonus > 0 
+                        ? `โบนัสที่ได้รับเพิ่ม: +${formatCurrency(bonus)}` 
+                        : 'มูลค่าเครดิตที่ลูกค้าจะได้รับในกระเป๋า';
+                    })()}
                   </span>
                 </div>
               </div>
