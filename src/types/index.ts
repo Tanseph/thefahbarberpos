@@ -135,6 +135,7 @@ export interface Bill {
   memberDeductedAmount?: number; // ยอดที่หักจากยอดเงินสมาชิก
   memberBalanceBefore?: number; // ยอดคงเหลือก่อนหัก
   memberBalanceAfter?: number; // ยอดคงเหลือหลังหัก
+  headsCount?: number; // จำนวนหัวตัดผมในบิลนี้ (ค่าเริ่มต้นคำนวณจากรายการตัดผม)
   status: 'COMPLETED' | 'VOIDED';
   voidReason?: string;
   voidedAt?: string;

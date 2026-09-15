@@ -34,6 +34,41 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
+
+  /* Universal Tactile Button Feedback */
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  .btn-tactile {
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.08s cubic-bezier(0.2, 0.8, 0.4, 1),
+                filter 0.08s ease,
+                background-color 0.15s ease,
+                border-color 0.15s ease,
+                box-shadow 0.15s ease;
+  }
+
+  /* Tactile Scale-Down on Active / Press */
+  button:active:not(:disabled),
+  [role="button"]:active:not([aria-disabled="true"]):not(.no-press-effect),
+  input[type="button"]:active:not(:disabled),
+  input[type="submit"]:active:not(:disabled),
+  .btn-tactile:active {
+    transform: scale(0.96) translateY(1px);
+    filter: brightness(0.96);
+  }
+
+  /* Disabled state prevention */
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input[type="button"]:disabled,
+  input[type="submit"]:disabled {
+    cursor: not-allowed;
+    transform: none !important;
+    filter: none !important;
+  }
 }
 
 /* Brand Theme Utility Styles */

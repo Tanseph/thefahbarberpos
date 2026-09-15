@@ -225,6 +225,7 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
           ) : (
             filteredBills.map((bill) => {
               const isVoided = bill.status === 'VOIDED';
+              const haircutHeads = bill.headsCount ?? (bill.items.filter((i) => i.category === 'HAIRCUT').reduce((s, i) => s + i.quantity, 0));
 
               return (
                 <div
@@ -237,10 +238,15 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-xs text-stone-900 font-mono">
                           #{bill.billNumber}
                         </span>
+                        {haircutHeads >= 2 && (
+                          <span className="text-[10px] bg-purple-100 text-purple-900 border border-purple-200 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                            ✂️ ตัด {haircutHeads} หัว
+                          </span>
+                        )}
                         {isVoided ? (
                           <span className="text-[10px] bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.2 rounded-full font-bold flex items-center gap-1">
                             <XCircle className="w-2.5 h-2.5" /> ยกเลิกแล้ว

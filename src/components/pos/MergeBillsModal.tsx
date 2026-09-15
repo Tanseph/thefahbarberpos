@@ -131,9 +131,9 @@ export const MergeBillsModal: React.FC<MergeBillsModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-black text-stone-900 flex items-center gap-1.5">
-                <span>รวมจ่ายบิลหลายรายการ (Merge / Pay Together)</span>
+                <span>รวมบิล (Merge Bills)</span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-900">
-                  โอนรวม 1 สลิป
+                  ชำระรวม 1 ยอด / สลิป
                 </span>
               </h3>
               <p className="text-xs text-stone-500">

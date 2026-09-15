@@ -24,12 +24,16 @@ import {
   Mail,
   LogOut,
   RefreshCw,
-  Cloud
+  Cloud,
+  Volume2,
+  VolumeX,
+  Volume1
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { formatCurrency } from '../../utils/formatters';
 import { BRAND_COLOR_PRESETS, DEFAULT_BRAND_COLOR, applyBrandTheme } from '../../utils/brandTheme';
+import { isSoundEnabled, setSoundEnabled, playClickSound, playSuccessSound } from '../../utils/sound';
 
 interface SettingsViewProps {
   settings: StoreSettings;
@@ -80,6 +84,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [isSavingStore, setIsSavingStore] = useState(false);
   const [isSavingCommissions, setIsSavingCommissions] = useState(false);
   const [isSavingPin, setIsSavingPin] = useState(false);
+  const [soundEnabledState, setSoundEnabledState] = useState<boolean>(() => isSoundEnabled());
+
+  useEffect(() => {
+    const handleSoundToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<{ enabled: boolean }>;
+      if (customEvent.detail && typeof customEvent.detail.enabled === 'boolean') {
+        setSoundEnabledState(customEvent.detail.enabled);
+      } else {
+        setSoundEnabledState(isSoundEnabled());
+      }
+    };
+    window.addEventListener('barbershop:sound-toggle', handleSoundToggle);
+    return () => window.removeEventListener('barbershop:sound-toggle', handleSoundToggle);
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1293,6 +1311,85 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       <Sparkles className="w-3 h-3 text-amber-400" />
                     </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Click Sound & Tactile Press Feedback Section */}
+          <div className="space-y-3 pt-4 border-t border-stone-100">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                  <Volume2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-stone-900 text-sm">
+                    เสียงกดปุ่ม & เอฟเฟกต์การสัมผัส (Click Sound & Tactile Feedback)
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    เล่นเสียงคลิกสั้นๆ เมื่อกดปุ่มในระบบ พร้อมแอนิเมชันกดลง (Scale-Down) เพื่อให้ทราบทันทีว่าปุ่มทำงานแล้ว
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !soundEnabledState;
+                    setSoundEnabled(next);
+                    setSoundEnabledState(next);
+                    if (next) playClickSound();
+                  }}
+                  className={`px-3.5 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                    soundEnabledState
+                      ? 'bg-amber-500 hover:bg-amber-600 text-stone-950 border-amber-400'
+                      : 'bg-stone-100 hover:bg-stone-200 text-stone-600 border-stone-300'
+                  }`}
+                >
+                  {soundEnabledState ? (
+                    <>
+                      <Volume2 className="w-4 h-4" />
+                      <span>เปิดเสียงอยู่ (ON)</span>
+                    </>
+                  ) : (
+                    <>
+                      <VolumeX className="w-4 h-4 text-stone-400" />
+                      <span>ปิดเสียง (OFF)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-stone-50/80 border border-stone-200/80 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1 max-w-md">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>ทดสอบเสียงและแอนิเมชันกดปุ่ม:</span>
+                </div>
+                <p className="text-xs text-stone-500">
+                  สังเกตเสียงคลิกเบาๆ ระดับไมโครพร้อมการยุบตัวของปุ่มแบบเรียลไทม์
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => playClickSound()}
+                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-stone-100 border border-stone-200 text-stone-800 text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  <Volume1 className="w-3.5 h-3.5 text-stone-500" />
+                  <span>ทดสอบเสียงคลิก</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => playSuccessSound()}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>ทดสอบเสียงสำเร็จ (Success)</span>
                 </button>
               </div>
             </div>

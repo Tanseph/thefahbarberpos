@@ -12,10 +12,13 @@ import {
   Sparkles,
   Cloud,
   CloudOff,
-  LogOut
+  LogOut,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { ActiveTab, Barber, StoreSettings } from '../types';
 import { formatThaiDate } from '../utils/formatters';
+import { isSoundEnabled, toggleSound } from '../utils/sound';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -45,19 +48,30 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+  const [soundOn, setSoundOn] = useState<boolean>(() => isSoundEnabled());
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
+    const handleSoundToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<{ enabled: boolean }>;
+      if (customEvent.detail && typeof customEvent.detail.enabled === 'boolean') {
+        setSoundOn(customEvent.detail.enabled);
+      } else {
+        setSoundOn(isSoundEnabled());
+      }
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    window.addEventListener('barbershop:sound-toggle', handleSoundToggle);
 
     return () => {
       clearInterval(timer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('barbershop:sound-toggle', handleSoundToggle);
     };
   }, []);
 
@@ -165,6 +179,31 @@ export const Header: React.FC<HeaderProps> = ({
               {formatThaiDate(currentTime, false)} • {currentTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
+
+          {/* Sound Effect Toggle Button */}
+          <button
+            id="header-sound-toggle-button"
+            type="button"
+            onClick={() => {
+              const next = toggleSound();
+              setSoundOn(next);
+            }}
+            className={`p-1.5 rounded-xl border transition cursor-pointer shadow-2xs flex items-center gap-1 text-xs font-bold ${
+              soundOn
+                ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
+                : 'bg-stone-100/80 hover:bg-stone-200 text-stone-400 border-stone-200/80'
+            }`}
+            title={soundOn ? 'เสียงกดปุ่ม: เปิดอยู่ (คลิกเพื่อปิดเสียง)' : 'เสียงกดปุ่ม: ปิดอยู่ (คลิกเพื่อเปิดเสียง)'}
+          >
+            {soundOn ? (
+              <Volume2 className="w-4 h-4 text-amber-600" />
+            ) : (
+              <VolumeX className="w-4 h-4 text-stone-400" />
+            )}
+            <span className="hidden lg:inline text-[11px] font-semibold">
+              {soundOn ? 'เสียงกด' : 'ปิดเสียง'}
+            </span>
+          </button>
 
           {/* PIN Lock / Admin Status */}
           {isAuthenticatedAdmin ? (

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { generatePromptPayQRDataUrl } from '../../utils/promptpay';
+import { playSuccessSound } from '../../utils/sound';
 import confetti from 'canvas-confetti';
 
 interface PaymentModalProps {
@@ -83,6 +84,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     setIsProcessing(true);
 
     try {
+      playSuccessSound();
       confetti({
         particleCount: 80,
         spread: 60,

@@ -224,11 +224,34 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     let splitCashTotal = 0;
     let splitTransferTotal = 0;
 
+    let transferBillsCount = 0;
+    let cashBillsCount = 0;
+    const transferSlipGroupKeys = new Set<string>();
+    let unmergedTransferCount = 0;
+
     completedBills.forEach((b) => {
       const billTip = b.tipAmount || 0;
       const billStoreSales = Math.max(0, b.grandTotal - billTip);
 
       // Payment Breakdown of STORE SALES (Tips are excluded from store sales)
+      const isTransfer = (b.paymentMethod === 'TRANSFER' || b.paymentMethod === 'PROMPTPAY' || b.paymentMethod === 'CREDIT_CARD' || b.paymentMethod === 'MEMBER') ||
+        (b.paymentMethod === 'SPLIT' && (b.splitTransferAmount || 0) > 0);
+      const isCash = (b.paymentMethod === 'CASH') ||
+        (b.paymentMethod === 'SPLIT' && (b.splitCashAmount || 0) > 0);
+
+      if (isTransfer) {
+        transferBillsCount += 1;
+        if (b.mergedGroupId) {
+          transferSlipGroupKeys.add(b.mergedGroupId);
+        } else {
+          unmergedTransferCount += 1;
+        }
+      }
+
+      if (isCash) {
+        cashBillsCount += 1;
+      }
+
       if (b.paymentMethod === 'CASH') {
         cashRevenue += billStoreSales;
       } else if (b.paymentMethod === 'TRANSFER' || b.paymentMethod === 'PROMPTPAY' || b.paymentMethod === 'CREDIT_CARD') {
@@ -256,7 +279,6 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         const itemGross = item.price * item.quantity;
         if (item.category === 'HAIRCUT') {
           grossHaircut += itemGross;
-          totalHeads += item.quantity;
           billHaircutCount += item.quantity;
         } else if (item.category === 'CHEMICAL') {
           grossChemical += itemGross;
@@ -269,10 +291,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         }
       });
 
-      // If no haircut items in bill, treat customer visit as 1 head
-      if (billHaircutCount === 0 && b.items.length > 0) {
-        totalHeads += 1;
-      }
+      const effectiveBillHeads = b.headsCount ?? (billHaircutCount > 0 ? billHaircutCount : (b.items.length > 0 ? 1 : 0));
+      totalHeads += effectiveBillHeads;
     });
 
     const grossSalesBeforeDiscount = grossHaircut + grossChemical + grossProduct + grossPackage + grossOther;
@@ -335,6 +355,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       grandTotalRevenue,
       cashRevenue,
       transferRevenue,
+      transferCount: transferSlipGroupKeys.size + unmergedTransferCount,
+      transferBillsCount,
+      cashBillsCount,
       memberBalanceDeducted,
       splitCashTotal,
       splitTransferTotal,
@@ -459,6 +482,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     heads: number;
     cash: number;
     transfer: number;
+    transferCount: number;
+    transferBillsCount: number;
     total: number;
     expenses: number;
     net: number;
@@ -482,10 +507,25 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     let dayCash = 0;
     let dayTransfer = 0;
     let dayHeads = 0;
+    let dayTransferBillsCount = 0;
+    const dayTransferGroupKeys = new Set<string>();
+    let dayUnmergedTransferCount = 0;
 
     dayBills.forEach((b) => {
       const billTip = b.tipAmount || 0;
       const billStoreSales = Math.max(0, b.grandTotal - billTip);
+
+      const isTransfer = (b.paymentMethod === 'TRANSFER' || b.paymentMethod === 'PROMPTPAY' || b.paymentMethod === 'CREDIT_CARD' || b.paymentMethod === 'MEMBER') ||
+        (b.paymentMethod === 'SPLIT' && (b.splitTransferAmount || 0) > 0);
+
+      if (isTransfer) {
+        dayTransferBillsCount += 1;
+        if (b.mergedGroupId) {
+          dayTransferGroupKeys.add(b.mergedGroupId);
+        } else {
+          dayUnmergedTransferCount += 1;
+        }
+      }
 
       if (b.paymentMethod === 'CASH') {
         dayCash += billStoreSales;
@@ -504,9 +544,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       }
 
       const haircutItemCount = b.items.filter((i) => i.category === 'HAIRCUT').reduce((s, i) => s + i.quantity, 0);
-      dayHeads += haircutItemCount > 0 ? haircutItemCount : 1;
+      dayHeads += b.headsCount ?? (haircutItemCount > 0 ? haircutItemCount : 1);
     });
 
+    const dayTransferCount = dayTransferGroupKeys.size + dayUnmergedTransferCount;
     const dayTotal = dayCash + dayTransfer;
     const dayExpenseTotal = dayExpenses.reduce((s, e) => s + e.amount, 0);
     const dayNet = dayTotal - dayExpenseTotal;
@@ -520,6 +561,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       heads: dayHeads,
       cash: dayCash,
       transfer: dayTransfer,
+      transferCount: dayTransferCount,
+      transferBillsCount: dayTransferBillsCount,
       total: dayTotal,
       expenses: dayExpenseTotal,
       net: dayNet,
@@ -637,10 +680,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       csv += `กำไรจากการดำเนินงานสุทธิ (Net Operating Profit),${dailyFinancials.netOperatingProfit},อัตรากำไร ${dailyFinancials.profitMarginPercent.toFixed(1)}%\n\n`;
 
       csv += `2. การแบ่งแยกช่องทางการรับเงิน (Cash Flow Breakdown)\n`;
-      csv += `เงินสดรับหน้าร้าน (Cash),${dailyFinancials.cashRevenue},บาท\n`;
-      csv += `เงินโอน/PromptPay/QR (Transfer),${dailyFinancials.transferRevenue},บาท\n`;
-      csv += `หักยอดเงินในกระเป๋าสมาชิก (Member Balance),${dailyFinancials.memberBalanceDeducted},บาท\n`;
-      csv += `เงินสดคงเหลือสุทธิหลังหักรายจ่ายเงินสด (Net Cash on hand),${dailyFinancials.netCashFlow},บาท\n\n`;
+      csv += `เงินสดรับหน้าร้าน (Cash),${dailyFinancials.cashRevenue},บาท,จำนวน ${dailyFinancials.cashBillsCount} บิล\n`;
+      csv += `เงินโอน/PromptPay/QR (Transfer),${dailyFinancials.transferRevenue},บาท,จำนวน ${dailyFinancials.transferCount} ยอด (${dailyFinancials.transferBillsCount} บิล)\n`;
+      csv += `หักยอดเงินในกระเป๋าสมาชิก (Member Balance),${dailyFinancials.memberBalanceDeducted},บาท,-\n`;
+      csv += `เงินสดคงเหลือสุทธิหลังหักรายจ่ายเงินสด (Net Cash on hand),${dailyFinancials.netCashFlow},บาท,-\n\n`;
 
       csv += `3. สรุปผลงานและส่วนแบ่งช่าง (Barber Performance)\n`;
       csv += `ช่าง,จำนวนหัว (คน),ค่าตัดผม (บาท),ค่าเคมี (บาท),ค่าสินค้า (บาท),ค่าทิป (บาท),รวมยอดที่สร้างให้ร้าน (บาท)\n`;
@@ -673,12 +716,17 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       csv += `หัก: ค่าใช้จ่ายดำเนินงานทั้งหมด,-${monthlyFinancials.totalExpenseAmount},-\n`;
       csv += `กำไรสุทธิจากการดำเนินงาน (Net Operating Profit),${monthlyFinancials.netOperatingProfit},อัตรากำไร ${monthlyFinancials.profitMarginPercent.toFixed(1)}%\n\n`;
 
-      csv += `2. ตารางสมุดรายวันรับ-จ่ายตลอดทั้งเดือน (Daily Ledger Breakdown)\n`;
-      csv += `วันที่,วัน,จำนวนหัว,เงินสด (บาท),เงินโอน (บาท),รวมยอดขายรายวัน (บาท),ค่าใช้จ่าย (บาท),กำไรสุทธิ (บาท),จำนวนบิล\n`;
+      csv += `2. การแบ่งแยกช่องทางการรับเงินทั้งเดือน (Monthly Cash Flow Breakdown)\n`;
+      csv += `เงินสดรับหน้าร้านสะสม (Cash),${monthlyFinancials.cashRevenue},บาท,จำนวน ${monthlyFinancials.cashBillsCount} บิล\n`;
+      csv += `เงินโอน/PromptPay/QR สะสม (Transfer),${monthlyFinancials.transferRevenue},บาท,จำนวน ${monthlyFinancials.transferCount} ยอด (${monthlyFinancials.transferBillsCount} บิล)\n`;
+      csv += `หักยอดเงินในกระเป๋าสมาชิก (Member Balance),${monthlyFinancials.memberBalanceDeducted},บาท,-\n\n`;
+
+      csv += `3. ตารางสมุดรายวันรับ-จ่ายตลอดทั้งเดือน (Daily Ledger Breakdown)\n`;
+      csv += `วันที่,วัน,จำนวนหัว,เงินสด (บาท),เงินโอน (บาท),ยอดโอน (ยอด),บิลโอน (บิล),รวมยอดขายรายวัน (บาท),ค่าใช้จ่าย (บาท),กำไรสุทธิ (บาท),จำนวนบิลทั้งหมด\n`;
       monthlyLedger.forEach((row) => {
-        csv += `${row.dayNum},${row.dayName},${row.heads},${row.cash},${row.transfer},${row.total},${row.expenses},${row.net},${row.billsCount}\n`;
+        csv += `${row.dayNum},${row.dayName},${row.heads},${row.cash},${row.transfer},${row.transferCount},${row.transferBillsCount},${row.total},${row.expenses},${row.net},${row.billsCount}\n`;
       });
-      csv += `รวมทั้งเดือน,-,${monthlyFinancials.totalHeads},${monthlyFinancials.cashRevenue},${monthlyFinancials.transferRevenue},${monthlyFinancials.grandTotalRevenue},${monthlyFinancials.totalExpenseAmount},${monthlyFinancials.netOperatingProfit},${monthlyFinancials.totalBillsCount}\n`;
+      csv += `รวมทั้งเดือน,-,${monthlyFinancials.totalHeads},${monthlyFinancials.cashRevenue},${monthlyFinancials.transferRevenue},${monthlyFinancials.transferCount},${monthlyFinancials.transferBillsCount},${monthlyFinancials.grandTotalRevenue},${monthlyFinancials.totalExpenseAmount},${monthlyFinancials.netOperatingProfit},${monthlyFinancials.totalBillsCount}\n`;
     }
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -847,8 +895,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                   <div className="font-mono font-bold text-stone-200 text-xs truncate">
                     <span className="text-emerald-300">💵 {formatCurrency(monthlyFinancials.cashRevenue)}</span>
                   </div>
-                  <div className="font-mono font-bold text-stone-300 text-[11px] truncate">
+                  <div className="font-mono font-bold text-stone-300 text-[11px] truncate flex items-center justify-between">
                     <span className="text-cyan-300">📲 {formatCurrency(monthlyFinancials.transferRevenue)}</span>
+                    <span className="text-[9px] text-cyan-400 font-sans font-bold">({monthlyFinancials.transferCount} ยอด)</span>
                   </div>
                 </div>
                 <div className="bg-stone-900/80 rounded-xl p-2.5 border border-stone-800 space-y-0.5 col-span-2 sm:col-span-1">
@@ -1065,8 +1114,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <div className="text-2xl font-black text-emerald-700 font-mono">
                   {formatCurrency(dailyFinancials.cashRevenue)}
                 </div>
-                <div className="text-[11px] text-emerald-800 font-medium mt-0.5">
-                  {dailyFinancials.grandTotalRevenue > 0 ? Math.round((dailyFinancials.cashRevenue / dailyFinancials.grandTotalRevenue) * 100) : 0}% ของยอดรับวันนี้
+                <div className="text-[11px] text-emerald-800 font-medium mt-0.5 flex items-center justify-between">
+                  <span>{dailyFinancials.grandTotalRevenue > 0 ? Math.round((dailyFinancials.cashRevenue / dailyFinancials.grandTotalRevenue) * 100) : 0}% ของยอดรับวันนี้</span>
+                  <span className="text-[10px] text-emerald-700 font-bold font-sans">({dailyFinancials.cashBillsCount} บิล)</span>
                 </div>
               </div>
               <div className="text-[10px] text-stone-500 pt-1 border-t border-stone-100 flex justify-between">
@@ -1089,13 +1139,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <div className="text-2xl font-black text-cyan-700 font-mono">
                   {formatCurrency(dailyFinancials.transferRevenue)}
                 </div>
-                <div className="text-[11px] text-cyan-800 font-medium mt-0.5">
-                  {dailyFinancials.grandTotalRevenue > 0 ? Math.round((dailyFinancials.transferRevenue / dailyFinancials.grandTotalRevenue) * 100) : 0}% ของยอดรับวันนี้
+                <div className="text-[11px] text-cyan-800 font-medium mt-0.5 flex items-center justify-between">
+                  <span>{dailyFinancials.grandTotalRevenue > 0 ? Math.round((dailyFinancials.transferRevenue / dailyFinancials.grandTotalRevenue) * 100) : 0}% ของยอดรับวันนี้</span>
+                  <span className="bg-cyan-100 text-cyan-900 font-bold px-1.5 py-0.2 rounded text-[10px] font-sans">
+                    {dailyFinancials.transferCount} ยอดโอน
+                  </span>
                 </div>
               </div>
-              <div className="text-[10px] text-stone-500 pt-1 border-t border-stone-100 flex justify-between">
+              <div className="text-[10px] text-stone-500 pt-1 border-t border-stone-100 flex justify-between items-center">
                 <span>PromptPay / ธนาคาร</span>
-                <span className="font-mono text-cyan-800">เข้าบัญชี</span>
+                <strong className="font-mono text-cyan-800 font-bold">
+                  {dailyFinancials.transferCount} ยอด ({dailyFinancials.transferBillsCount} บิล)
+                </strong>
               </div>
             </div>
 
@@ -1438,11 +1493,24 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           {/* Daily Bills Breakdown Table */}
           <div className="bg-white border border-stone-200 rounded-3xl p-5 shadow-xs space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-100">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Receipt className="w-5 h-5 text-amber-600" />
                 <h3 className="font-extrabold text-stone-900 text-sm">
                   รายการบิลทั้งหมดของวันที่ {formatThaiDate(selectedDate)} ({dailyBills.length} บิล)
                 </h3>
+                <div className="flex items-center gap-1.5 text-[11px] flex-wrap">
+                  <span className="px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 font-bold flex items-center gap-1 border border-cyan-200">
+                    <span>📱 โอน:</span>
+                    <strong className="font-mono">{dailyFinancials.transferCount} ยอด</strong>
+                    <span className="text-stone-500">({dailyFinancials.transferBillsCount} บิล)</span>
+                    <span className="font-mono text-cyan-900">{formatCurrency(dailyFinancials.transferRevenue)}</span>
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center gap-1 border border-emerald-200">
+                    <span>💵 สด:</span>
+                    <span className="text-stone-500">({dailyFinancials.cashBillsCount} บิล)</span>
+                    <span className="font-mono text-emerald-900">{formatCurrency(dailyFinancials.cashRevenue)}</span>
+                  </span>
+                </div>
               </div>
 
               {/* Merge Bills Button & Search */}
@@ -1500,12 +1568,23 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                         : '-';
                       const barberNames = Array.from(new Set(bill.items.map((i) => i.barberName))).join(', ');
 
+                      const haircutHeads = bill.headsCount ?? (bill.items.filter((i) => i.category === 'HAIRCUT').reduce((s, i) => s + i.quantity, 0));
+
                       return (
                         <tr key={bill.id} className={`transition ${bill.status === 'VOIDED' ? 'bg-rose-50/50 opacity-60 line-through' : 'hover:bg-stone-50'}`}>
                           <td className="p-2.5 font-bold text-stone-500 font-sans">{timeStr} น.</td>
                           <td className="p-2.5 font-bold text-stone-900">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span>{bill.billNumber}</span>
+                              {haircutHeads >= 2 && (
+                                <span
+                                  className="px-1.5 py-0.5 rounded-md text-[10px] bg-purple-100 text-purple-900 font-extrabold flex items-center gap-0.5 border border-purple-200"
+                                  title={`ตัดผมทั้งหมด ${haircutHeads} หัว (จ่ายในบิลเดียว)`}
+                                >
+                                  <Scissors className="w-2.5 h-2.5 text-purple-600 shrink-0" />
+                                  <span>ตัด {haircutHeads} หัว</span>
+                                </span>
+                              )}
                               {bill.isMerged && (
                                 <span
                                   className="px-1.5 py-0.5 rounded-md text-[9px] bg-purple-100 text-purple-800 font-bold flex items-center gap-0.5 border border-purple-200"
@@ -1528,7 +1607,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                             {barberNames || '-'}
                           </td>
                           <td className="p-2.5 font-sans text-stone-600 max-w-xs truncate">
-                            {bill.items.map((i) => `${i.name} (x${i.quantity})`).join(', ')}
+                            {bill.items.map((i) => i.quantity > 1 ? `${i.name} (x${i.quantity})` : i.name).join(', ')}
                           </td>
                           <td className="p-2.5 text-center font-sans">
                             <button
@@ -1555,11 +1634,11 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                             {formatCurrency(bill.grandTotal)}
                           </td>
                           <td className="p-2.5 text-center font-sans">
-                            <div className="flex items-center justify-center gap-1">
+                            <div className="flex items-center justify-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => setSelectedBillForReceipt(bill)}
-                                className="p-1 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition cursor-pointer"
+                                className="p-1.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition cursor-pointer"
                                 title="ดูใบเสร็จ"
                               >
                                 <Eye className="w-3.5 h-3.5" />
@@ -1569,7 +1648,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => setUnmergingBill(bill)}
-                                    className="p-1 text-purple-700 hover:text-purple-950 hover:bg-purple-100 rounded-lg transition cursor-pointer"
+                                    className="p-1.5 text-purple-700 hover:text-purple-950 hover:bg-purple-100 rounded-lg transition cursor-pointer"
                                     title="ยกเลิกรวมบิล และแยกกลับเป็นบิลเดิม (มีป๊อปอัพยืนยัน)"
                                   >
                                     <RotateCcw className="w-3.5 h-3.5" />
@@ -1579,7 +1658,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleOpenMergeBillsModal(bill.id)}
-                                  className="p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition cursor-pointer"
+                                  className="p-1.5 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition cursor-pointer"
                                   title="รวมบิลนี้กับบิลอื่น (เช่น ลูกค้า 2 คนโอนรวม 1 สลิป)"
                                 >
                                   <Layers className="w-3.5 h-3.5" />
@@ -1588,15 +1667,16 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => setEditingBill(bill)}
-                                className="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition cursor-pointer"
-                                title="แก้ไขบิล / เปลี่ยนช่าง / เปลี่ยนวิธีชำระเงิน"
+                                className="px-2.5 py-1 text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer shadow-2xs active:scale-95"
+                                title="แก้ไขบิล / เพิ่มหัวตัดผม / เปลี่ยนช่าง / เปลี่ยนวิธีชำระเงิน"
                               >
-                                <Edit className="w-3.5 h-3.5" />
+                                <Edit className="w-3.5 h-3.5 text-amber-700" />
+                                <span>แก้ไขบิล</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setDeletingBill(bill)}
-                                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                                 title="ลบบิลออกจากระบบ"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1607,6 +1687,28 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                       );
                     })}
                   </tbody>
+                  <tfoot className="bg-stone-100 font-black text-stone-900 text-xs border-t-2 border-stone-300">
+                    <tr>
+                      <td colSpan={5} className="p-2.5 font-sans">
+                        รวมยอดทั้งหมดวันนี้ ({dailyFinancials.totalBillsCount} บิล / {dailyFinancials.totalHeads} หัว)
+                      </td>
+                      <td className="p-2.5 text-center font-sans">
+                        <div className="space-y-0.5 text-[10px]">
+                          <div className="text-cyan-800 font-bold">โอน: {dailyFinancials.transferCount} ยอด ({dailyFinancials.transferBillsCount} บิล)</div>
+                          <div className="text-emerald-800 font-bold">สด: {dailyFinancials.cashBillsCount} บิล</div>
+                        </div>
+                      </td>
+                      <td className="p-2.5 text-right font-mono text-pink-600">
+                        {dailyFinancials.totalTips > 0 ? formatCurrency(dailyFinancials.totalTips) : '-'}
+                      </td>
+                      <td className="p-2.5 text-right font-mono font-black text-amber-950 bg-amber-100/70 text-sm">
+                        {formatCurrency(dailyFinancials.grandTotalRevenue)}
+                      </td>
+                      <td className="p-2.5 text-center text-[10px] text-stone-500 font-sans">
+                        {dailyFinancials.totalBillsCount} บิล
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             )}
@@ -1761,8 +1863,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <div className="text-2xl font-black text-emerald-700 font-mono">
                   {formatCurrency(monthlyFinancials.cashRevenue)}
                 </div>
-                <div className="text-[11px] text-emerald-800 font-medium mt-0.5">
-                  {monthlyFinancials.grandTotalRevenue > 0 ? Math.round((monthlyFinancials.cashRevenue / monthlyFinancials.grandTotalRevenue) * 100) : 0}% ของยอดทั้งเดือน
+                <div className="text-[11px] text-emerald-800 font-medium mt-0.5 flex items-center justify-between">
+                  <span>{monthlyFinancials.grandTotalRevenue > 0 ? Math.round((monthlyFinancials.cashRevenue / monthlyFinancials.grandTotalRevenue) * 100) : 0}% ของยอดทั้งเดือน</span>
+                  <span className="text-[10px] text-emerald-700 font-bold font-sans">({monthlyFinancials.cashBillsCount} บิล)</span>
                 </div>
               </div>
               <div className="text-[10px] text-stone-500 pt-1 border-t border-stone-100 flex justify-between">
@@ -1785,13 +1888,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <div className="text-2xl font-black text-cyan-700 font-mono">
                   {formatCurrency(monthlyFinancials.transferRevenue)}
                 </div>
-                <div className="text-[11px] text-cyan-800 font-medium mt-0.5">
-                  {monthlyFinancials.grandTotalRevenue > 0 ? Math.round((monthlyFinancials.transferRevenue / monthlyFinancials.grandTotalRevenue) * 100) : 0}% ของยอดทั้งเดือน
+                <div className="text-[11px] text-cyan-800 font-medium mt-0.5 flex items-center justify-between">
+                  <span>{monthlyFinancials.grandTotalRevenue > 0 ? Math.round((monthlyFinancials.transferRevenue / monthlyFinancials.grandTotalRevenue) * 100) : 0}% ของยอดทั้งเดือน</span>
+                  <span className="bg-cyan-100 text-cyan-900 font-bold px-1.5 py-0.2 rounded text-[10px] font-sans">
+                    {monthlyFinancials.transferCount} ยอดโอน
+                  </span>
                 </div>
               </div>
-              <div className="text-[10px] text-stone-500 pt-1 border-t border-stone-100 flex justify-between">
-                <span>PromptPay / ธนาคาร</span>
-                <span className="font-mono text-cyan-800">เข้าบัญชี</span>
+              <div className="text-[10px] text-stone-500 pt-1 border-t border-stone-100 flex justify-between items-center">
+                <span>ยอดโอนสะสมทั้งเดือน</span>
+                <strong className="font-mono text-cyan-800 font-bold">
+                  {monthlyFinancials.transferCount} ยอด ({monthlyFinancials.transferBillsCount} บิล)
+                </strong>
               </div>
             </div>
 
@@ -2137,7 +2245,16 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                         </td>
 
                         <td className="p-2.5 text-right font-bold text-cyan-800">
-                          {row.transfer > 0 ? formatCurrency(row.transfer) : <span className="text-stone-300 font-normal">0฿</span>}
+                          {row.transfer > 0 ? (
+                            <div>
+                              <div>{formatCurrency(row.transfer)}</div>
+                              <div className="text-[10px] text-cyan-600 font-sans font-normal">
+                                {row.transferCount} ยอด ({row.transferBillsCount} บิล)
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-stone-300 font-normal">0฿</span>
+                          )}
                         </td>
 
                         <td className="p-2.5 text-right font-black text-amber-950 bg-amber-50/50">
@@ -2179,10 +2296,16 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                       {formatNumber(monthlyFinancials.totalHeads)} หัว
                     </td>
                     <td className="p-3 text-right font-black text-emerald-300">
-                      {formatCurrency(monthlyFinancials.cashRevenue)}
+                      <div>{formatCurrency(monthlyFinancials.cashRevenue)}</div>
+                      <div className="text-[10px] text-emerald-200 font-sans font-normal">
+                        ({monthlyFinancials.cashBillsCount} บิล)
+                      </div>
                     </td>
                     <td className="p-3 text-right font-black text-cyan-300">
-                      {formatCurrency(monthlyFinancials.transferRevenue)}
+                      <div>{formatCurrency(monthlyFinancials.transferRevenue)}</div>
+                      <div className="text-[10px] text-cyan-200 font-sans font-normal">
+                        {monthlyFinancials.transferCount} ยอด ({monthlyFinancials.transferBillsCount} บิล)
+                      </div>
                     </td>
                     <td className="p-3 text-right font-black text-amber-300 text-sm bg-stone-800/80">
                       {formatCurrency(monthlyFinancials.grandTotalRevenue)}
@@ -2252,11 +2375,17 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between items-center p-2 rounded-xl bg-white border border-stone-200/70">
                     <span className="text-stone-600">วันนี้:</span>
-                    <strong className="text-emerald-800 font-mono text-sm">{formatCurrency(dailyFinancials.cashRevenue)}</strong>
+                    <div className="text-right">
+                      <strong className="text-emerald-800 font-mono text-sm block">{formatCurrency(dailyFinancials.cashRevenue)}</strong>
+                      <span className="text-[10px] text-emerald-600 font-sans font-bold">({dailyFinancials.cashBillsCount} บิล)</span>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center p-2 rounded-xl bg-white border border-stone-200/70">
                     <span className="text-stone-600">ทั้งเดือน:</span>
-                    <strong className="text-emerald-800 font-mono text-sm">{formatCurrency(monthlyFinancials.cashRevenue)}</strong>
+                    <div className="text-right">
+                      <strong className="text-emerald-800 font-mono text-sm block">{formatCurrency(monthlyFinancials.cashRevenue)}</strong>
+                      <span className="text-[10px] text-emerald-600 font-sans font-bold">({monthlyFinancials.cashBillsCount} บิล)</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2272,11 +2401,17 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between items-center p-2 rounded-xl bg-white border border-stone-200/70">
                     <span className="text-stone-600">วันนี้:</span>
-                    <strong className="text-cyan-800 font-mono text-sm">{formatCurrency(dailyFinancials.transferRevenue)}</strong>
+                    <div className="text-right">
+                      <strong className="text-cyan-800 font-mono text-sm block">{formatCurrency(dailyFinancials.transferRevenue)}</strong>
+                      <span className="text-[10px] text-cyan-600 font-sans font-bold">{dailyFinancials.transferCount} ยอด ({dailyFinancials.transferBillsCount} บิล)</span>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center p-2 rounded-xl bg-white border border-stone-200/70">
                     <span className="text-stone-600">ทั้งเดือน:</span>
-                    <strong className="text-cyan-800 font-mono text-sm">{formatCurrency(monthlyFinancials.transferRevenue)}</strong>
+                    <div className="text-right">
+                      <strong className="text-cyan-800 font-mono text-sm block">{formatCurrency(monthlyFinancials.transferRevenue)}</strong>
+                      <span className="text-[10px] text-cyan-600 font-sans font-bold">{monthlyFinancials.transferCount} ยอด ({monthlyFinancials.transferBillsCount} บิล)</span>
+                    </div>
                   </div>
                 </div>
               </div>

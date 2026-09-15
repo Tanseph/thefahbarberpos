@@ -73,9 +73,38 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
   let productSales = 0;
   let tipsTotal = 0;
 
+  const mergedTransferGroups = new Set<string>();
+  let unmergedTransferCount = 0;
+  let transferBillsCount = 0;
+  let cashBillsCount = 0;
+
   targetBills.forEach((bill) => {
     const billTip = bill.tipAmount || 0;
     const billStoreSales = Math.max(0, bill.grandTotal - billTip);
+
+    const hasTransfer =
+      bill.paymentMethod === 'TRANSFER' ||
+      bill.paymentMethod === 'PROMPTPAY' ||
+      bill.paymentMethod === 'CREDIT_CARD' ||
+      bill.paymentMethod === 'MEMBER' ||
+      (bill.paymentMethod === 'SPLIT' && (bill.splitTransferAmount || 0) > 0);
+
+    const hasCash =
+      bill.paymentMethod === 'CASH' ||
+      (bill.paymentMethod === 'SPLIT' && (bill.splitCashAmount || 0) > 0);
+
+    if (hasCash) {
+      cashBillsCount += 1;
+    }
+
+    if (hasTransfer) {
+      transferBillsCount += 1;
+      if (bill.mergedGroupId) {
+        mergedTransferGroups.add(bill.mergedGroupId);
+      } else {
+        unmergedTransferCount += 1;
+      }
+    }
 
     if (bill.paymentMethod === 'CASH') {
       totalCash += billStoreSales;
@@ -108,6 +137,8 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
       }
     });
   });
+
+  const transferCount = mergedTransferGroups.size + unmergedTransferCount;
 
   const grossRevenue = haircutSales + chemicalSales + productSales;
   const totalExpensesAmount = targetExpenses.reduce((s, e) => s + e.amount, 0);
@@ -203,6 +234,9 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
     expenses: number;
     net: number;
     billsCount: number;
+    transferCount: number;
+    transferBillsCount: number;
+    cashBillsCount: number;
   }
 
   const monthlyLedgerRows: MonthRow[] = [];
@@ -220,7 +254,33 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
       let dTransfer = 0;
       let dHeads = 0;
 
+      const dayMergedGroups = new Set<string>();
+      let dayUnmergedTransfer = 0;
+      let dayTransferBills = 0;
+      let dayCashBills = 0;
+
       dayBills.forEach((b) => {
+        const hasTransfer =
+          b.paymentMethod === 'TRANSFER' ||
+          b.paymentMethod === 'PROMPTPAY' ||
+          b.paymentMethod === 'CREDIT_CARD' ||
+          b.paymentMethod === 'MEMBER' ||
+          (b.paymentMethod === 'SPLIT' && (b.splitTransferAmount || 0) > 0);
+
+        const hasCash =
+          b.paymentMethod === 'CASH' ||
+          (b.paymentMethod === 'SPLIT' && (b.splitCashAmount || 0) > 0);
+
+        if (hasCash) dayCashBills += 1;
+        if (hasTransfer) {
+          dayTransferBills += 1;
+          if (b.mergedGroupId) {
+            dayMergedGroups.add(b.mergedGroupId);
+          } else {
+            dayUnmergedTransfer += 1;
+          }
+        }
+
         if (b.paymentMethod === 'CASH') dCash += b.grandTotal;
         else if (b.paymentMethod === 'TRANSFER' || b.paymentMethod === 'PROMPTPAY' || b.paymentMethod === 'CREDIT_CARD' || b.paymentMethod === 'MEMBER') dTransfer += b.grandTotal;
         else if (b.paymentMethod === 'SPLIT') {
@@ -229,11 +289,12 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
         }
 
         const hCount = b.items.filter((i) => i.category === 'HAIRCUT').reduce((s, i) => s + i.quantity, 0);
-        dHeads += hCount > 0 ? hCount : 1;
+        dHeads += b.headsCount ?? (hCount > 0 ? hCount : 1);
       });
 
       const dTotal = dCash + dTransfer;
       const dExp = dayExpenses.reduce((s, e) => s + e.amount, 0);
+      const dayTransferCount = dayMergedGroups.size + dayUnmergedTransfer;
 
       monthlyLedgerRows.push({
         dayNum: d,
@@ -245,6 +306,9 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
         expenses: dExp,
         net: dTotal - dExp,
         billsCount: dayBills.length,
+        transferCount: dayTransferCount,
+        transferBillsCount: dayTransferBills,
+        cashBillsCount: dayCashBills,
       });
     }
   }
@@ -493,7 +557,7 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
                   <div className="text-sm font-black text-emerald-800 font-mono mt-0.5">
                     {formatCurrency(totalCash)}
                   </div>
-                  <div className="text-[9px] text-emerald-600 font-mono">ตรวจนับในลิ้นชัก</div>
+                  <div className="text-[9px] text-emerald-700 font-mono font-bold">{cashBillsCount} บิล</div>
                 </div>
 
                 {/* 3. Transfer */}
@@ -502,7 +566,9 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
                   <div className="text-sm font-black text-cyan-800 font-mono mt-0.5">
                     {formatCurrency(totalTransfer)}
                   </div>
-                  <div className="text-[9px] text-cyan-600 font-mono">ตรงกับ Statement</div>
+                  <div className="text-[9px] text-cyan-700 font-mono font-bold">
+                    {transferCount} ยอด ({transferBillsCount} บิล)
+                  </div>
                 </div>
 
                 {/* 4. Total Sales */}
@@ -582,7 +648,12 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
                   <tbody className="divide-y divide-stone-100">
                     <tr className="hover:bg-stone-50">
                       <td className="p-2 text-stone-700 flex items-center justify-between">
-                        <span>💵 เงินสดในลิ้นชัก (Cash Inflow)</span>
+                        <span className="flex items-center gap-1.5">
+                          <span>💵 เงินสดในลิ้นชัก (Cash Inflow)</span>
+                          <span className="text-[9.5px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-1 rounded font-sans">
+                            {cashBillsCount} บิล
+                          </span>
+                        </span>
                         <span className="text-[9px] text-stone-400 font-mono">
                           ({grossRevenue > 0 ? ((totalCash / grossRevenue) * 100).toFixed(1) : 0}%)
                         </span>
@@ -591,7 +662,12 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
                     </tr>
                     <tr className="hover:bg-stone-50">
                       <td className="p-2 text-stone-700 flex items-center justify-between">
-                        <span>📱 โอนผ่านบัญชี / QR PromptPay</span>
+                        <span className="flex items-center gap-1.5">
+                          <span>📱 โอนผ่านบัญชี / QR PromptPay</span>
+                          <span className="text-[9.5px] text-cyan-800 font-bold bg-cyan-50 border border-cyan-200 px-1 rounded font-sans">
+                            {transferCount} ยอด ({transferBillsCount} บิล)
+                          </span>
+                        </span>
                         <span className="text-[9px] text-stone-400 font-mono">
                           ({grossRevenue > 0 ? ((totalTransfer / grossRevenue) * 100).toFixed(1) : 0}%)
                         </span>
@@ -731,8 +807,22 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
                             {row.dayName}
                           </td>
                           <td className="p-1.5 text-center font-sans">{row.heads > 0 ? `${row.heads} หัว` : '-'}</td>
-                          <td className="p-1.5 text-right text-emerald-800">{row.cash > 0 ? formatCurrency(row.cash) : '0฿'}</td>
-                          <td className="p-1.5 text-right text-cyan-800">{row.transfer > 0 ? formatCurrency(row.transfer) : '0฿'}</td>
+                          <td className="p-1.5 text-right text-emerald-800 font-mono">
+                            {row.cash > 0 ? (
+                              <div>
+                                <div>{formatCurrency(row.cash)}</div>
+                                <div className="text-[8px] text-emerald-600 font-sans font-normal">({row.cashBillsCount} บิล)</div>
+                              </div>
+                            ) : '0฿'}
+                          </td>
+                          <td className="p-1.5 text-right text-cyan-800 font-mono">
+                            {row.transfer > 0 ? (
+                              <div>
+                                <div>{formatCurrency(row.transfer)}</div>
+                                <div className="text-[8px] text-cyan-600 font-sans font-normal">{row.transferCount} ยอด ({row.transferBillsCount} บิล)</div>
+                              </div>
+                            ) : '0฿'}
+                          </td>
                           <td className="p-1.5 text-right font-black text-amber-950 bg-amber-50/30">{row.total > 0 ? formatCurrency(row.total) : '0฿'}</td>
                           <td className="p-1.5 text-right text-rose-600">{row.expenses > 0 ? `-${formatCurrency(row.expenses)}` : '0฿'}</td>
                           <td className={`p-1.5 text-right font-black ${row.net >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
@@ -746,8 +836,14 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
                       <tr>
                         <td colSpan={2} className="p-2 text-amber-300 font-sans">รวมทั้งเดือน</td>
                         <td className="p-2 text-center text-amber-300 font-sans">{formatNumber(totalHeads)} หัว</td>
-                        <td className="p-2 text-right text-emerald-300">{formatCurrency(totalCash)}</td>
-                        <td className="p-2 text-right text-cyan-300">{formatCurrency(totalTransfer)}</td>
+                        <td className="p-2 text-right text-emerald-300">
+                          <div>{formatCurrency(totalCash)}</div>
+                          <div className="text-[8.5px] text-emerald-200 font-sans font-normal">({cashBillsCount} บิล)</div>
+                        </td>
+                        <td className="p-2 text-right text-cyan-300">
+                          <div>{formatCurrency(totalTransfer)}</div>
+                          <div className="text-[8.5px] text-cyan-200 font-sans font-normal">{transferCount} ยอด ({transferBillsCount} บิล)</div>
+                        </td>
                         <td className="p-2 text-right text-amber-300 font-black">{formatCurrency(grossRevenue)}</td>
                         <td className="p-2 text-right text-rose-300">-{formatCurrency(totalExpensesAmount)}</td>
                         <td className="p-2 text-right text-emerald-300 font-black">{formatCurrency(netIncome)}</td>
@@ -766,7 +862,11 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
               <div className="border border-stone-200 rounded-xl overflow-hidden">
                 <div className="bg-stone-100 px-3 py-2 font-bold text-stone-800 text-[11px] border-b border-stone-200 flex justify-between items-center">
                   <span>6. บันทึกรายการบิลประจำวัน (Daily Transaction Register)</span>
-                  <span className="text-[10px] text-stone-500 font-mono">{targetBills.length} บิล</span>
+                  <div className="flex items-center gap-1.5 text-[9.5px]">
+                    <span className="text-cyan-800 font-bold bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 rounded">โอน {transferCount} ยอด ({transferBillsCount} บิล)</span>
+                    <span className="text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">สด {cashBillsCount} บิล</span>
+                    <span className="text-stone-500 font-mono">รวม {targetBills.length} บิล</span>
+                  </div>
                 </div>
                 <div className="max-h-[300px] overflow-y-auto">
                   <table className="w-full text-[10px] border-collapse font-mono">
@@ -802,6 +902,15 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
                         );
                       })}
                     </tbody>
+                    <tfoot className="sticky bottom-0 bg-stone-100 font-bold border-t border-stone-300 text-[10px]">
+                      <tr>
+                        <td colSpan={4} className="p-1.5 font-sans">รวมยอดทั้งหมด ({targetBills.length} บิล)</td>
+                        <td className="p-1.5 text-center font-sans text-[9px]">
+                          โอน {transferCount} ยอด | สด {cashBillsCount} บิล
+                        </td>
+                        <td className="p-1.5 text-right font-black text-amber-950">{formatCurrency(grossRevenue)}</td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               </div>

@@ -377,6 +377,9 @@ export const POSView: React.FC<POSViewProps> = ({
       });
     });
 
+    // Count total haircut heads
+    const haircutItemsCount = finalCartItems.filter(i => i.category === 'HAIRCUT').reduce((s, i) => s + i.quantity, 0);
+
     // Timestamp
     let finalTimestamp = new Date().toISOString();
     if (!isRealTimeMode && billDateTime) {
@@ -414,6 +417,7 @@ export const POSView: React.FC<POSViewProps> = ({
       memberName: finalCustomerName,
       memberPhone: selectedMember?.phone,
       items: finalCartItems,
+      headsCount: haircutItemsCount > 0 ? haircutItemsCount : undefined,
       subtotal: rawSubtotal,
       discountTotal: totalDiscounts,
       pointsDiscount: pointsDiscountValue,
@@ -510,32 +514,32 @@ export const POSView: React.FC<POSViewProps> = ({
   const todaySalesSum = todayCompletedBills.reduce((sum, b) => sum + b.grandTotal, 0);
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto pb-12">
+    <div className="space-y-3 max-w-2xl mx-auto pb-10">
       {/* ======================================================== */}
       {/* CUTE SUCCESS TOAST BANNER (Shows when bill is saved)      */}
       {/* ======================================================== */}
       {successToast && (
-        <div className="animate-pop-in bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-300/80 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 text-emerald-950">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-lg font-bold shadow-xs">
+        <div className="animate-pop-in bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-300/80 rounded-xl p-3 shadow-xs flex items-center justify-between gap-2.5 text-emerald-950">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-base font-bold shadow-2xs shrink-0">
               ✓
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-sm text-emerald-900">
-                  ✨ บันทึกบิลสำเร็จเรียบร้อย!
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-extrabold text-xs text-emerald-900">
+                  ✨ บันทึกบิลสำเร็จ!
                 </span>
-                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-200/60 text-emerald-800">
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-emerald-200/60 text-emerald-800">
                   #{successToast.billNumber}
                 </span>
               </div>
-              <p className="text-xs text-emerald-700 mt-0.5">
-                ช่าง{successToast.barberName} • ยอดรวม <strong>{formatCurrency(successToast.grandTotal)}</strong> • พร้อมรับลูกค้าท่านต่อไป
+              <p className="text-[11px] text-emerald-700 mt-0.5">
+                ช่าง{successToast.barberName} • ยอดรวม <strong>{formatCurrency(successToast.grandTotal)}</strong>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {successToast.savedBill && (
               <button
                 type="button"
@@ -543,18 +547,18 @@ export const POSView: React.FC<POSViewProps> = ({
                   setActiveReceiptBill(successToast.savedBill || null);
                   setIsReceiptModalOpen(true);
                 }}
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-100/60 border border-emerald-200 text-emerald-800 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-100/60 border border-emerald-200 text-emerald-800 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs"
               >
-                <Printer className="w-3.5 h-3.5" />
-                <span>พิมพ์สลิปย้อนหลัง</span>
+                <Printer className="w-3 h-3" />
+                <span>พิมพ์สลิป</span>
               </button>
             )}
             <button
               type="button"
               onClick={() => setSuccessToast(null)}
-              className="p-1.5 rounded-lg hover:bg-emerald-200/50 text-emerald-700 transition cursor-pointer"
+              className="p-1 rounded-lg hover:bg-emerald-200/50 text-emerald-700 transition cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -563,42 +567,39 @@ export const POSView: React.FC<POSViewProps> = ({
       {/* ======================================================== */}
       {/* 1. TOP BAR & QUICK STATS                                 */}
       {/* ======================================================== */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-stone-200/80 rounded-2xl px-4 py-3 shadow-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#FAF6F0] border border-[#E8E2D5] flex items-center justify-center text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-stone-200/80 rounded-xl px-3.5 py-2.5 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-[#FAF6F0] border border-[#E8E2D5] flex items-center justify-center text-xs shrink-0">
             💈
           </div>
           <div>
-            <h1 className="text-sm font-extrabold text-stone-800 tracking-tight flex items-center gap-2">
+            <h1 className="text-xs sm:text-sm font-black text-stone-800 tracking-tight flex items-center gap-1.5">
               <span>บันทึกบิลหน้าร้าน</span>
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             </h1>
-            <p className="text-[11px] text-stone-400">
-              เลือกช่าง กรอกราคา และบันทึกบิลได้สะดวกรวดเร็ว
-            </p>
           </div>
         </div>
 
         {/* Live Clock & History Shortcut */}
         <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-50 border border-stone-200/60 text-xs text-stone-600">
-            <Clock className="w-3.5 h-3.5 text-stone-400" />
+          <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-50 border border-stone-200/60 text-[11px] text-stone-600">
+            <Clock className="w-3 h-3 text-stone-400" />
             <span className="font-mono font-medium">
-              {currentLiveTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              {currentLiveTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
 
-          <div className="px-3 py-1.5 rounded-xl bg-stone-50 border border-stone-200/60 text-xs text-stone-600">
-            <span>บิลวันนี้: </span>
+          <div className="px-2.5 py-1 rounded-lg bg-stone-50 border border-stone-200/60 text-[11px] text-stone-600">
+            <span>วันนี้: </span>
             <strong className="text-stone-900 font-extrabold">{todayCompletedBills.length} บิล</strong>
           </div>
 
           <button
             type="button"
             onClick={() => setIsDailyBillsOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200/80 border border-stone-200 text-stone-700 text-xs font-bold transition cursor-pointer active:scale-95 shadow-2xs"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200/80 border border-stone-200 text-stone-700 text-xs font-bold transition cursor-pointer active:scale-95 shadow-2xs"
           >
-            <Receipt className="w-3.5 h-3.5 text-stone-500" />
+            <Receipt className="w-3 h-3 text-stone-500" />
             <span>ประวัติบิล</span>
           </button>
         </div>
@@ -607,10 +608,10 @@ export const POSView: React.FC<POSViewProps> = ({
       {/* ======================================================== */}
       {/* MAIN POS FORM CONTAINER                                  */}
       {/* ======================================================== */}
-      <form onSubmit={handleSaveBill} className="space-y-4">
+      <form onSubmit={handleSaveBill} className="space-y-3">
         
         {/* SECTION 1: BARBER SELECTOR BUTTONS (ปุ่มเลือกช่าง) */}
-        <div className="bg-white border border-stone-200/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="bg-white border border-stone-200/80 rounded-xl p-3.5 shadow-2xs space-y-2.5">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
               <span>✂️</span>
@@ -623,12 +624,12 @@ export const POSView: React.FC<POSViewProps> = ({
 
           {/* Barber Buttons Row - Clean & Minimal Korean Style */}
           {activeBarbers.length === 0 ? (
-            <div className="p-4 bg-amber-50/60 border border-dashed border-amber-300/80 rounded-2xl text-center space-y-1">
+            <div className="p-3 bg-amber-50/60 border border-dashed border-amber-300/80 rounded-xl text-center space-y-1">
               <p className="text-xs font-bold text-amber-900">💈 ยังไม่มีรายชื่อช่างในระบบ</p>
               <p className="text-[11px] text-stone-500">กรุณาไปที่เมนู <strong className="text-stone-700 font-semibold">"ตั้งค่าระบบ"</strong> เพื่อเพิ่มรายชื่อช่างประจำร้าน</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
               {activeBarbers.map((barber) => {
                 const isSelected = selectedBarberId === barber.id;
                 return (
@@ -636,22 +637,22 @@ export const POSView: React.FC<POSViewProps> = ({
                     key={barber.id}
                     type="button"
                     onClick={() => setSelectedBarberId(barber.id)}
-                    className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all border cursor-pointer active:scale-95 text-center relative ${
+                    className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all border cursor-pointer active:scale-95 text-center relative ${
                       isSelected
-                        ? 'bg-[#FAF6F0] border-amber-500/80 shadow-xs ring-2 ring-amber-400/40'
+                        ? 'bg-[#FAF6F0] border-amber-500/80 shadow-2xs ring-2 ring-amber-400/40'
                         : 'bg-stone-50/70 hover:bg-stone-100/90 border-stone-200 text-stone-700'
                     }`}
                   >
                     {/* Selected check badge */}
                     {isSelected && (
-                      <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] shadow-2xs">
-                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-amber-500 text-white flex items-center justify-center text-[8px] shadow-2xs">
+                        <Check className="w-2 h-2 stroke-[3]" />
                       </div>
                     )}
 
                     {/* Avatar Icon */}
                     <div
-                      className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm mb-1.5 overflow-hidden transition-transform ${
+                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold text-xs mb-1 overflow-hidden transition-transform ${
                         isSelected
                           ? 'bg-amber-100 text-amber-900 border border-amber-300 scale-105'
                           : 'bg-stone-200 text-stone-600 border border-stone-300/60'
@@ -664,7 +665,7 @@ export const POSView: React.FC<POSViewProps> = ({
                       )}
                     </div>
 
-                    <span className={`text-sm font-extrabold block truncate max-w-full tracking-tight ${isSelected ? 'text-stone-900' : 'text-stone-700'}`}>
+                    <span className={`text-xs font-bold block truncate max-w-full tracking-tight ${isSelected ? 'text-stone-900' : 'text-stone-700'}`}>
                       ช่าง{barber.nickname}
                     </span>
                   </button>
@@ -675,7 +676,7 @@ export const POSView: React.FC<POSViewProps> = ({
         </div>
 
         {/* SECTION 2: CUSTOMER & MEMBER ATTACHMENT (กรอกชื่อลูกค้า & สมาชิก) */}
-        <div className="bg-white border border-stone-200/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="bg-white border border-stone-200/80 rounded-xl p-3.5 shadow-2xs space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-stone-400" />
@@ -687,11 +688,8 @@ export const POSView: React.FC<POSViewProps> = ({
           </div>
 
           {/* Customer Input & Member Search Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
-            <div className="sm:col-span-8 lg:col-span-9 space-y-1">
-              <label className="text-xs font-bold text-stone-700 block">
-                ชื่อลูกค้า / ชื่อเล่น:
-              </label>
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+            <div className="sm:col-span-8 lg:col-span-9">
               <div className="relative">
                 <input
                   type="text"
@@ -702,15 +700,15 @@ export const POSView: React.FC<POSViewProps> = ({
                     }
                   }}
                   readOnly={!!selectedMember}
-                  placeholder="กรุณากรอกชื่อลูกค้า"
-                  className={`w-full border rounded-xl px-3.5 py-2 text-xs font-bold text-stone-900 focus:outline-none transition-all ${
+                  placeholder="กรุณากรอกชื่อลูกค้า / ชื่อเล่น"
+                  className={`w-full border rounded-xl px-3 py-1.5 text-xs font-bold text-stone-900 focus:outline-none transition-all ${
                     selectedMember
                       ? 'bg-amber-50/80 border-amber-300 text-amber-950 cursor-default pr-24'
                       : 'bg-white border-stone-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-100 shadow-2xs'
                   }`}
                 />
                 {selectedMember && (
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black bg-stone-900 text-amber-300 px-2 py-0.5 rounded-md">
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-black bg-stone-900 text-amber-300 px-1.5 py-0.5 rounded-md">
                     ⭐ {selectedMember.packageLevel || 'Silver'}
                   </span>
                 )}
@@ -725,16 +723,16 @@ export const POSView: React.FC<POSViewProps> = ({
                     setSelectedMember(null);
                     setPointsRedeemed(0);
                   }}
-                  className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+                  className="w-full py-1.5 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer shadow-2xs"
                   title="ยกเลิกผูกสมาชิก"
                 >
-                  <span>✕ ยกเลิกผูกสมาชิก</span>
+                  <span>✕ ยกเลิกสมาชิก</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={() => setIsMemberModalOpen(true)}
-                  className="w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
+                  className="w-full py-1.5 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 text-xs font-black flex items-center justify-center gap-1 transition cursor-pointer shadow-2xs"
                   title="ค้นหาสมาชิก หรือค้นเบอร์โทร"
                 >
                   <UserCheck className="w-3.5 h-3.5 text-amber-700" />
@@ -744,25 +742,25 @@ export const POSView: React.FC<POSViewProps> = ({
             </div>
           </div>
 
-          {selectedMember ? (
-            <div className="bg-gradient-to-r from-amber-50/90 via-stone-50 to-amber-50/50 border border-amber-300 rounded-2xl p-3.5 space-y-2.5">
+          {selectedMember && (
+            <div className="bg-gradient-to-r from-amber-50/90 via-stone-50 to-amber-50/50 border border-amber-300 rounded-xl p-2.5 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-400 text-stone-950 font-black text-sm flex items-center justify-center shadow-xs shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-400 text-stone-950 font-black text-xs flex items-center justify-center shadow-2xs shrink-0">
                     {selectedMember.nickname?.slice(0, 2) || selectedMember.name.slice(0, 1)}
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-xs font-black text-stone-900">{selectedMember.name}</span>
                       {selectedMember.nickname && (
                         <span className="text-xs font-extrabold text-amber-900">({selectedMember.nickname})</span>
                       )}
-                      <span className="text-[10px] font-black uppercase bg-stone-900 text-amber-300 px-2 py-0.5 rounded-full">
+                      <span className="text-[9px] font-black uppercase bg-stone-900 text-amber-300 px-1.5 py-0.2 rounded-full">
                         ⭐ {selectedMember.packageLevel || 'Silver'}
                       </span>
                     </div>
-                    <div className="text-[11px] text-stone-600 flex items-center gap-3 mt-0.5">
-                      <span>เบอร์: <strong className="text-stone-800 font-mono">{selectedMember.phone}</strong></span>
+                    <div className="text-[10px] text-stone-500 flex items-center gap-2 mt-0.5">
+                      <span>เบอร์: <strong className="text-stone-700 font-mono">{selectedMember.phone}</strong></span>
                       <span>•</span>
                       <span>แต้ม: <strong className="text-amber-800">{selectedMember.points || 0} pts</strong></span>
                     </div>
@@ -770,9 +768,9 @@ export const POSView: React.FC<POSViewProps> = ({
                 </div>
 
                 {/* Balance Display Pill */}
-                <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-300 text-right shadow-2xs">
-                  <span className="text-[10px] text-stone-500 font-bold block">💰 ยอดเงินคงเหลือในบัญชี:</span>
-                  <strong className="text-sm font-black text-emerald-700 font-mono">
+                <div className="bg-white px-2.5 py-1 rounded-lg border border-amber-300 text-right shadow-2xs">
+                  <span className="text-[9px] text-stone-500 font-bold block">คงเหลือในกระเป๋า:</span>
+                  <strong className="text-xs font-black text-emerald-700 font-mono">
                     {formatCurrency(memberAvailableBalance)}
                   </strong>
                 </div>
@@ -780,15 +778,15 @@ export const POSView: React.FC<POSViewProps> = ({
 
               {/* Automatic Balance Deduction Feature */}
               {memberAvailableBalance > 0 ? (
-                <div className="bg-white/95 rounded-xl p-2.5 border border-amber-200/80 flex flex-wrap items-center justify-between gap-2">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                <div className="bg-white/95 rounded-lg p-2 border border-amber-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={isAutoDeductMemberBalance}
                       onChange={(e) => setIsAutoDeductMemberBalance(e.target.checked)}
-                      className="w-4 h-4 text-amber-600 rounded border-stone-300 focus:ring-amber-400 cursor-pointer"
+                      className="w-3.5 h-3.5 text-amber-600 rounded border-stone-300 focus:ring-amber-400 cursor-pointer"
                     />
-                    <span className="text-xs font-bold text-stone-800 flex items-center gap-1">
+                    <span className="font-bold text-stone-800 flex items-center gap-1 text-[11px]">
                       <span>หักยอดเงินคงเหลือสมาชิกอัตโนมัติ</span>
                       {isAutoDeductMemberBalance && (
                         <span className="text-emerald-700 font-black">
@@ -799,51 +797,48 @@ export const POSView: React.FC<POSViewProps> = ({
                   </label>
 
                   {isAutoDeductMemberBalance && (
-                    <span className="text-[11px] text-stone-500">
+                    <span className="text-[10px] text-stone-500">
                       คงเหลือหลังบิลนี้: <strong className="text-stone-800 font-mono">{formatCurrency(Math.max(0, memberAvailableBalance - memberDeductedAmount))}</strong>
                     </span>
                   )}
                 </div>
               ) : (
-                <div className="text-[11px] text-amber-800 bg-amber-100/60 px-3 py-1.5 rounded-xl">
-                  ℹ️ ลูกค้าท่านนี้ยังไม่มียอดเงินคงเหลือในแพ็กเกจ (สามารถเติมแพ็กเกจได้ที่เมนู "ระบบสมาชิก")
+                <div className="text-[10px] text-amber-800 bg-amber-100/60 px-2.5 py-1 rounded-lg">
+                  ℹ️ ลูกค้าท่านนี้ยังไม่มียอดเงินคงเหลือในแพ็กเกจ
                 </div>
               )}
 
               {tierDiscountAmount > 0 && (
-                <div className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold inline-block">
+                <div className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold inline-block">
                   🎁 ส่วนลดสมาชิกระดับ {selectedMember.tier === 'PLATINUM' ? '10%' : '5%'}: -{formatCurrency(tierDiscountAmount)}
                 </div>
               )}
-            </div>
-          ) : (
-            <div className="bg-stone-50/60 px-3.5 py-2 rounded-xl border border-stone-200/50 flex items-center justify-between text-xs text-stone-400">
-              <span>สถานะ: ลูกค้าทั่วไป (Walk-in)</span>
-              <span className="text-[11px] text-stone-400">คลิกเพื่อค้นหาสมาชิกและหักยอดอัตโนมัติ</span>
             </div>
           )}
         </div>
 
         {/* SECTION 3: NUMERIC SERVICE FEES (ค่าตัดผม, ค่าเคมี, ค่าทิป) */}
-        <div className="bg-white border border-stone-200/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
-          <h2 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
-            <span>💰</span>
-            <span>3. กรอกราคาค่าบริการ & ค่าทิป</span>
-          </h2>
+        <div className="bg-white border border-stone-200/80 rounded-xl p-3.5 shadow-2xs space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+              <span>💰</span>
+              <span>3. กรอกราคาค่าบริการ & ค่าทิป</span>
+            </h2>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {/* 3.1 ช่องกรอกราคาค่าตัดผม */}
-            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-amber-300 rounded-2xl p-3.5 space-y-1.5 transition">
-              <label className="text-xs font-bold text-stone-700 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Scissors className="w-3.5 h-3.5 text-stone-500" />
+            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-amber-300 rounded-xl p-2.5 space-y-1 transition">
+              <label className="text-[11px] font-bold text-stone-700 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Scissors className="w-3 h-3 text-stone-500" />
                   <span>ค่าตัดผม</span>
                 </span>
                 <span className="text-[10px] text-stone-400">บาท (฿)</span>
               </label>
 
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">
                   ฿
                 </span>
                 <input
@@ -853,23 +848,23 @@ export const POSView: React.FC<POSViewProps> = ({
                   value={haircutFeeInput}
                   onChange={(e) => setHaircutFeeInput(e.target.value)}
                   placeholder="ระบุราคาตัดผม"
-                  className="w-full bg-white border border-stone-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 rounded-xl pl-7 pr-3 py-2 text-base font-extrabold text-stone-800 focus:outline-none font-mono"
+                  className="w-full bg-white border border-stone-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 rounded-lg pl-6 pr-2.5 py-1.5 text-sm font-black text-stone-800 focus:outline-none font-mono"
                 />
               </div>
             </div>
 
             {/* 3.2 ช่องกรอกราคาค่าเคมี */}
-            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-cyan-300 rounded-2xl p-3.5 space-y-1.5 transition">
-              <label className="text-xs font-bold text-stone-700 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <FlaskConical className="w-3.5 h-3.5 text-cyan-600" />
+            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-cyan-300 rounded-xl p-2.5 space-y-1 transition">
+              <label className="text-[11px] font-bold text-stone-700 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <FlaskConical className="w-3 h-3 text-cyan-600" />
                   <span>ค่าเคมี</span>
                 </span>
                 <span className="text-[10px] text-stone-400">บาท (฿)</span>
               </label>
 
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">
                   ฿
                 </span>
                 <input
@@ -879,23 +874,23 @@ export const POSView: React.FC<POSViewProps> = ({
                   value={chemicalFeeInput}
                   onChange={(e) => setChemicalFeeInput(e.target.value)}
                   placeholder="ระบุราคาเคมี"
-                  className="w-full bg-white border border-stone-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 rounded-xl pl-7 pr-3 py-2 text-base font-extrabold text-stone-800 focus:outline-none font-mono"
+                  className="w-full bg-white border border-stone-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 rounded-lg pl-6 pr-2.5 py-1.5 text-sm font-black text-stone-800 focus:outline-none font-mono"
                 />
               </div>
             </div>
 
             {/* 3.3 ช่องกรอกราคาค่าทิป */}
-            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-pink-300 rounded-2xl p-3.5 space-y-1.5 transition">
-              <label className="text-xs font-bold text-stone-700 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Heart className="w-3.5 h-3.5 text-pink-500" />
+            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-pink-300 rounded-xl p-2.5 space-y-1 transition">
+              <label className="text-[11px] font-bold text-stone-700 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Heart className="w-3 h-3 text-pink-500" />
                   <span>ค่าทิปช่าง</span>
                 </span>
-                <span className="text-[10px] text-pink-700 font-bold">ไม่รวมยอดขายร้าน</span>
+                <span className="text-[9px] text-pink-700 font-bold">ไม่รวมยอดร้าน</span>
               </label>
 
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">
                   ฿
                 </span>
                 <input
@@ -905,7 +900,7 @@ export const POSView: React.FC<POSViewProps> = ({
                   value={tipAmountInput}
                   onChange={(e) => setTipAmountInput(e.target.value)}
                   placeholder="ระบุยอดทิป"
-                  className="w-full bg-white border border-stone-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-100 rounded-xl pl-7 pr-3 py-2 text-base font-extrabold text-stone-800 focus:outline-none font-mono"
+                  className="w-full bg-white border border-stone-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-100 rounded-lg pl-6 pr-2.5 py-1.5 text-sm font-black text-stone-800 focus:outline-none font-mono"
                 />
               </div>
             </div>
@@ -913,77 +908,69 @@ export const POSView: React.FC<POSViewProps> = ({
         </div>
 
         {/* SECTION 4: RETAIL PRODUCTS (เลือกสินค้าหน้าร้าน) */}
-        <div className="bg-white border border-stone-200/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="bg-white border border-stone-200/80 rounded-xl p-3.5 shadow-2xs space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
                 <ShoppingBag className="w-3.5 h-3.5 text-stone-400" />
                 <span>4. เลือกสินค้าหน้าร้าน</span>
               </h2>
-              <p className="text-[11px] text-stone-400">
-                เลือกสินค้า ระบุจำนวน และคำนวณราคารวมอัตโนมัติ
-              </p>
             </div>
 
             <button
               type="button"
               onClick={() => handleAddProductLine()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-800 text-xs font-bold transition cursor-pointer active:scale-95 shadow-2xs"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-800 text-xs font-bold transition cursor-pointer active:scale-95 shadow-2xs"
             >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-              <span>+ เพิ่มรายการสินค้า</span>
+              <Plus className="w-3 h-3 stroke-[3]" />
+              <span>+ เพิ่มสินค้า</span>
             </button>
           </div>
 
           {/* Product Line Items */}
           {productLines.length === 0 ? (
-            <div className="bg-stone-50/60 border border-dashed border-stone-200 rounded-xl p-5 text-center space-y-1.5">
-              <ShoppingBag className="w-6 h-6 text-stone-300 mx-auto" />
-              <p className="text-xs text-stone-500">ยังไม่มีสินค้าในบิลนี้</p>
-              <p className="text-[11px] text-stone-400">
-                หากลูกค้าซื้อแว็กซ์ โพเมด หรือแชมพู กดปุ่ม "+ เพิ่มรายการสินค้า" ด้านบนเพื่อเลือกสินค้า
-              </p>
+            <div className="bg-stone-50/60 border border-dashed border-stone-200 rounded-xl p-3 text-center space-y-1">
+              <ShoppingBag className="w-4 h-4 text-stone-300 mx-auto" />
+              <p className="text-xs text-stone-500">ไม่มีสินค้าในบิลนี้</p>
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {productLines.map((line, index) => {
                 const lineTotal = line.price * line.quantity;
                 return (
                   <div
                     key={line.id}
-                    className="bg-stone-50/80 border border-stone-200/80 rounded-xl p-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 hover:border-amber-300 transition"
+                    className="bg-stone-50/80 border border-stone-200/80 rounded-xl p-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 hover:border-amber-300 transition"
                   >
-                    {/* Index & Wide Dropdown Selector */}
+                    {/* Index & Dropdown Selector */}
                     <div className="flex-1 w-full flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-lg bg-stone-200 text-stone-600 text-[11px] font-bold flex items-center justify-center shrink-0">
+                      <span className="w-5 h-5 rounded-md bg-stone-200 text-stone-600 text-[10px] font-bold flex items-center justify-center shrink-0">
                         {index + 1}
                       </span>
 
-                      {/* Wide Dropdown Menu for Clear Product Selection */}
                       <div className="flex-1 relative">
                         <select
                           value={line.serviceId}
                           onChange={(e) => handleChangeProductInLine(line.id, e.target.value)}
-                          className="w-full bg-white border border-stone-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 rounded-xl px-3 py-2 text-xs font-bold text-stone-800 focus:outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
+                          className="w-full bg-white border border-stone-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 rounded-lg px-2.5 py-1.5 text-xs font-bold text-stone-800 focus:outline-none cursor-pointer appearance-none pr-7 shadow-2xs"
                         >
                           {productOptions.map((prod) => (
                             <option key={prod.id} value={prod.id}>
-                              {prod.name} — ราคา ฿{prod.price.toLocaleString()} (คงเหลือ: {prod.stock ?? 0} ชิ้น)
+                              {prod.name} — ฿{prod.price.toLocaleString()} (คงเหลือ: {prod.stock ?? 0})
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="w-4 h-4 text-stone-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <ChevronDown className="w-3.5 h-3.5 text-stone-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                     </div>
 
                     {/* Quantity Stepper & Price & Subtotal */}
-                    <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto border-t md:border-t-0 pt-2 md:pt-0 border-stone-200/50">
-                      {/* Quantity stepper */}
-                      <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-xl p-1 shadow-2xs">
+                    <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto border-t sm:border-t-0 pt-1.5 sm:pt-0 border-stone-200/50">
+                      <div className="flex items-center gap-0.5 bg-white border border-stone-200 rounded-lg p-0.5 shadow-2xs">
                         <button
                           type="button"
                           onClick={() => handleUpdateProductQuantity(line.id, -1)}
-                          className="w-6 h-6 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold flex items-center justify-center transition cursor-pointer"
+                          className="w-5 h-5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold flex items-center justify-center transition cursor-pointer"
                         >
                           -
                         </button>
@@ -1005,23 +992,20 @@ export const POSView: React.FC<POSViewProps> = ({
                             }
                           }}
                           placeholder="1"
-                          className="w-10 text-center bg-transparent text-xs font-bold text-stone-800 focus:outline-none"
+                          className="w-8 text-center bg-transparent text-xs font-bold text-stone-800 focus:outline-none"
                         />
                         <button
                           type="button"
                           onClick={() => handleUpdateProductQuantity(line.id, 1)}
-                          className="w-6 h-6 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold flex items-center justify-center transition cursor-pointer"
+                          className="w-5 h-5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold flex items-center justify-center transition cursor-pointer"
                         >
                           +
                         </button>
-                        <span className="text-[10px] text-stone-400 pr-1">ชิ้น</span>
+                        <span className="text-[10px] text-stone-400 px-1">ชิ้น</span>
                       </div>
 
                       {/* Product line total */}
-                      <div className="text-right min-w-[90px]">
-                        <span className="text-[10px] text-stone-400 block">
-                          @{formatCurrency(line.price)}
-                        </span>
+                      <div className="text-right min-w-[75px]">
                         <strong className="text-xs font-bold text-stone-900 font-mono">
                           {formatCurrency(lineTotal)}
                         </strong>
@@ -1031,7 +1015,7 @@ export const POSView: React.FC<POSViewProps> = ({
                       <button
                         type="button"
                         onClick={() => handleRemoveProductLine(line.id)}
-                        className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition cursor-pointer"
+                        className="p-1 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-600 transition cursor-pointer"
                         title="ลบรายการนี้"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1042,11 +1026,11 @@ export const POSView: React.FC<POSViewProps> = ({
               })}
 
               {/* Total Product Summary Row */}
-              <div className="flex justify-between items-center bg-stone-50 px-3.5 py-2 rounded-xl border border-stone-200/60 text-xs">
+              <div className="flex justify-between items-center bg-stone-50 px-3 py-1.5 rounded-lg border border-stone-200/60 text-xs">
                 <span className="text-stone-500">
                   รวมสินค้า ({productLines.reduce((s, p) => s + p.quantity, 0)} ชิ้น):
                 </span>
-                <strong className="text-stone-900 font-extrabold">
+                <strong className="text-stone-900 font-black">
                   {formatCurrency(productsSubtotal)}
                 </strong>
               </div>
@@ -1054,32 +1038,32 @@ export const POSView: React.FC<POSViewProps> = ({
           )}
         </div>
 
-        {/* SECTION 5: DATE & TIME / REALTIME VS BACKDATING (วันที่และเวลาที่บันทึกบิล) */}
-        <div className="bg-white border border-stone-200/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+        {/* SECTION 5: DATE & TIME / REALTIME VS BACKDATING */}
+        <div className="bg-white border border-stone-200/80 rounded-xl p-3.5 shadow-2xs space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-stone-400" />
-              <span>5. วันที่และเวลาที่บันทึกบิล (Date & Time)</span>
+              <span>5. วันที่และเวลาที่บันทึกบิล</span>
             </h2>
 
             {/* Mode switch: Live vs Custom */}
-            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200/60">
+            <div className="flex items-center gap-1 bg-stone-100 p-0.5 rounded-lg border border-stone-200/60">
               <button
                 type="button"
                 onClick={handleSetTodayRealtime}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
                   isRealTimeMode
                     ? 'bg-white text-stone-800 shadow-2xs'
                     : 'text-stone-500 hover:text-stone-800'
                 }`}
               >
                 <Clock className="w-3 h-3 text-emerald-600" />
-                <span>⚡ เรียลไทม์ (เวลาจริง)</span>
+                <span>⚡ ปัจจุบัน</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsRealTimeMode(false)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
                   !isRealTimeMode
                     ? 'bg-white text-stone-800 shadow-2xs'
                     : 'text-stone-500 hover:text-stone-800'
@@ -1092,8 +1076,8 @@ export const POSView: React.FC<POSViewProps> = ({
           </div>
 
           {/* Date Picker row */}
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-stone-50/70 p-3 rounded-xl border border-stone-200/60">
-            <div className="sm:col-span-6 md:col-span-5">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-stone-50/70 p-2 rounded-xl border border-stone-200/60">
+            <div className="sm:col-span-6">
               <input
                 type="datetime-local"
                 value={billDateTime}
@@ -1101,38 +1085,35 @@ export const POSView: React.FC<POSViewProps> = ({
                   setBillDateTime(e.target.value);
                   setIsRealTimeMode(false);
                 }}
-                className={`w-full bg-white border rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-stone-800 focus:outline-none ${
+                className={`w-full bg-white border rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-stone-800 focus:outline-none ${
                   isRealTimeMode ? 'border-emerald-300' : 'border-amber-300'
                 }`}
               />
             </div>
 
-            <div className="sm:col-span-6 md:col-span-7 flex flex-wrap items-center gap-2">
+            <div className="sm:col-span-6 flex items-center gap-1.5 justify-end">
               <button
                 type="button"
                 onClick={handleSetTodayRealtime}
-                className="px-2.5 py-1 rounded-lg bg-white hover:bg-stone-100 border border-stone-200 text-stone-600 text-xs font-medium transition cursor-pointer shadow-2xs"
+                className="px-2 py-1 rounded-md bg-white hover:bg-stone-100 border border-stone-200 text-stone-600 text-[11px] font-bold transition cursor-pointer shadow-2xs"
               >
                 ⚡ ตอนนี้
               </button>
               <button
                 type="button"
                 onClick={handleSetYesterday}
-                className="px-2.5 py-1 rounded-lg bg-white hover:bg-stone-100 border border-stone-200 text-stone-600 text-xs font-medium transition cursor-pointer shadow-2xs"
+                className="px-2 py-1 rounded-md bg-white hover:bg-stone-100 border border-stone-200 text-stone-600 text-[11px] font-bold transition cursor-pointer shadow-2xs"
               >
                 📅 เมื่อวานนี้
               </button>
-              <span className="text-[11px] text-stone-400 italic ml-auto">
-                {isRealTimeMode ? '🟢 บันทึกเวลาปัจจุบัน' : '🟡 บันทึกตามวันเวลาที่เลือก'}
-              </span>
             </div>
           </div>
         </div>
 
-        {/* SECTION 6: PAYMENT METHOD, GRAND TOTAL & SUBMIT (วิธีชำระเงิน & ยอดเงินรวม & ปุ่มบันทึก) */}
-        <div className="bg-white border-2 border-stone-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-stone-100">
-            <h2 className="text-xs sm:text-sm font-black uppercase tracking-wide text-stone-800 flex items-center gap-1.5">
+        {/* SECTION 6: PAYMENT METHOD, GRAND TOTAL & SUBMIT */}
+        <div className="bg-white border border-stone-200 rounded-2xl p-3.5 sm:p-4 shadow-xs space-y-3">
+          <div className="flex items-center justify-between pb-1.5 border-b border-stone-100">
+            <h2 className="text-xs font-black uppercase tracking-wide text-stone-800 flex items-center gap-1.5">
               <span>🧾</span>
               <span>6. วิธีชำระเงิน & สรุปราคารวม</span>
             </h2>
@@ -1142,67 +1123,66 @@ export const POSView: React.FC<POSViewProps> = ({
               className="text-xs text-stone-400 hover:text-stone-700 flex items-center gap-1 cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />
-              <span>ล้างข้อมูล</span>
+              <span>ล้างฟอร์ม</span>
             </button>
           </div>
 
           {/* Breakdown calculation */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-            <div className="bg-stone-50 p-2.5 rounded-xl border border-stone-200/60">
-              <span className="text-stone-400 block text-[11px]">ค่าตัดผม:</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+            <div className="bg-stone-50 p-2 rounded-lg border border-stone-200/60">
+              <span className="text-stone-400 block text-[10px]">ค่าตัดผม:</span>
               <strong className="text-stone-800 font-bold">{formatCurrency(haircutFee)}</strong>
             </div>
-            <div className="bg-stone-50 p-2.5 rounded-xl border border-stone-200/60">
-              <span className="text-stone-400 block text-[11px]">ค่าเคมี:</span>
+            <div className="bg-stone-50 p-2 rounded-lg border border-stone-200/60">
+              <span className="text-stone-400 block text-[10px]">ค่าเคมี:</span>
               <strong className="text-stone-800 font-bold">{formatCurrency(chemicalFee)}</strong>
             </div>
-            <div className="bg-stone-50 p-2.5 rounded-xl border border-stone-200/60">
-              <span className="text-stone-400 block text-[11px]">ค่าสินค้า:</span>
+            <div className="bg-stone-50 p-2 rounded-lg border border-stone-200/60">
+              <span className="text-stone-400 block text-[10px]">ค่าสินค้า:</span>
               <strong className="text-stone-800 font-bold">{formatCurrency(productsSubtotal)}</strong>
             </div>
-            <div className="bg-stone-50 p-2.5 rounded-xl border border-stone-200/60">
-              <span className="text-stone-400 block text-[11px]">ค่าทิปช่าง:</span>
+            <div className="bg-stone-50 p-2 rounded-lg border border-stone-200/60">
+              <span className="text-stone-400 block text-[10px]">ค่าทิปช่าง:</span>
               <strong className="text-pink-600 font-bold">{formatCurrency(tipAmount)}</strong>
-              <span className="text-[9px] text-pink-700 block font-medium mt-0.5">*ไม่รวมยอดขายร้าน</span>
             </div>
           </div>
 
-          {/* PAYMENT METHOD SELECTION (เงินสด / เงินโอน / สลับ / Member) */}
-          <div className="space-y-2.5 pt-1">
+          {/* PAYMENT METHOD SELECTION */}
+          <div className="space-y-1.5">
             <label className="text-xs font-bold text-stone-600 block">
               เลือกวิธีชำระเงิน:
             </label>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {/* Option 1: เงินโอน (TRANSFER) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              {/* Option 1: TRANSFER */}
               <button
                 type="button"
                 onClick={() => setPaymentMethod('TRANSFER')}
-                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border transition-all cursor-pointer ${
                   paymentMethod === 'TRANSFER'
-                    ? 'bg-blue-50 border-blue-400 text-blue-950 font-bold ring-2 ring-blue-200 shadow-2xs'
-                    : 'bg-stone-50/70 hover:bg-stone-100 border-stone-200 text-stone-700'
+                    ? 'bg-blue-50 border-blue-400 text-blue-950 font-black ring-2 ring-blue-200 shadow-2xs'
+                    : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700'
                 }`}
               >
-                <QrCode className="w-5 h-5 mb-1 text-blue-600" />
-                <span className="text-xs font-bold">📱 เงินโอน</span>
+                <QrCode className="w-4 h-4 text-blue-600" />
+                <span className="text-xs">เงินโอน</span>
               </button>
 
-              {/* Option 2: เงินสด (CASH) */}
+              {/* Option 2: CASH */}
               <button
                 type="button"
                 onClick={() => setPaymentMethod('CASH')}
-                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border transition-all cursor-pointer ${
                   paymentMethod === 'CASH'
-                    ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-bold ring-2 ring-emerald-200 shadow-2xs'
-                    : 'bg-stone-50/70 hover:bg-stone-100 border-stone-200 text-stone-700'
+                    ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-black ring-2 ring-emerald-200 shadow-2xs'
+                    : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700'
                 }`}
               >
-                <Banknote className="w-5 h-5 mb-1 text-emerald-600" />
-                <span className="text-xs font-bold">💵 เงินสด</span>
+                <Banknote className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs">เงินสด</span>
               </button>
 
-              {/* Option 3: สลับ (SPLIT: สด + โอน ในบิลเดียว) */}
+              {/* Option 3: SPLIT */}
               <button
                 type="button"
                 onClick={() => {
@@ -1211,87 +1191,76 @@ export const POSView: React.FC<POSViewProps> = ({
                     setSplitCashInput(String(Math.floor(grandTotal / 2)));
                   }
                 }}
-                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border transition-all cursor-pointer ${
                   paymentMethod === 'SPLIT'
-                    ? 'bg-purple-50 border-purple-400 text-purple-950 font-bold ring-2 ring-purple-200 shadow-2xs'
-                    : 'bg-stone-50/70 hover:bg-stone-100 border-stone-200 text-stone-700'
+                    ? 'bg-purple-50 border-purple-400 text-purple-950 font-black ring-2 ring-purple-200 shadow-2xs'
+                    : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700'
                 }`}
               >
-                <Split className="w-5 h-5 mb-1 text-purple-600" />
-                <span className="text-xs font-bold">🔄 สลับ (สด+โอน)</span>
+                <Split className="w-4 h-4 text-purple-600" />
+                <span className="text-xs">สลับ (สด+โอน)</span>
               </button>
 
-              {/* Option 4: Member (สมาชิก) */}
+              {/* Option 4: MEMBER */}
               <button
                 type="button"
                 onClick={() => {
                   setPaymentMethod('MEMBER');
                   if (!selectedMember) setIsMemberModalOpen(true);
                 }}
-                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border transition-all cursor-pointer ${
                   paymentMethod === 'MEMBER'
-                    ? 'bg-amber-50 border-amber-400 text-amber-950 font-bold ring-2 ring-amber-200 shadow-2xs'
-                    : 'bg-stone-50/70 hover:bg-stone-100 border-stone-200 text-stone-700'
+                    ? 'bg-amber-50 border-amber-400 text-amber-950 font-black ring-2 ring-amber-200 shadow-2xs'
+                    : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700'
                 }`}
               >
-                <CreditCard className="w-5 h-5 mb-1 text-amber-600" />
-                <span className="text-xs font-bold">🧸 Member</span>
+                <CreditCard className="w-4 h-4 text-amber-600" />
+                <span className="text-xs">Member</span>
               </button>
             </div>
           </div>
 
-          {/* ======================================================== */}
-          {/* PAYMENT METHOD DETAILS ACCORDING TO SELECTION            */}
-          {/* ======================================================== */}
-
-          {/* 1. TRANSFER PAYMENT DETAILS */}
+          {/* PAYMENT METHOD DETAILS ACCORDING TO SELECTION */}
           {paymentMethod === 'TRANSFER' && (
-            <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-4 space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+            <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-2.5 space-y-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
+                <span className="font-bold text-emerald-950 flex items-center gap-1">
                   <QrCode className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>ชำระโดยการโอนเงิน (สแกน PromptPay / สลิปโอนเงิน)</span>
+                  <span>สแกน QR / เงินโอน</span>
                 </span>
-                <span className="text-xs font-black text-emerald-900 font-mono">
+                <span className="font-black text-emerald-900 font-mono">
                   ยอดโอน: {formatCurrency(grandTotal)}
                 </span>
               </div>
-
-              <div>
-                <input
-                  type="text"
-                  value={paymentReference}
-                  onChange={(e) => setPaymentReference(e.target.value)}
-                  placeholder="หมายเหตุ / สลิปโอน เช่น โอนรวม 2 คน, โอนจาก ธ.กสิกร (ไม่บังคับ)"
-                  className="w-full bg-white border border-emerald-200 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none"
-                />
-              </div>
+              <input
+                type="text"
+                value={paymentReference}
+                onChange={(e) => setPaymentReference(e.target.value)}
+                placeholder="หมายเหตุ / สลิป เช่น โอนรวม, ธ.กสิกร (ไม่บังคับ)"
+                className="w-full bg-white border border-emerald-200 focus:border-emerald-500 rounded-lg px-2.5 py-1 text-xs text-stone-800 focus:outline-none"
+              />
             </div>
           )}
 
-          {/* 2. SPLIT PAYMENT DETAILS (สด + โอน ในบิลเดียว) */}
           {paymentMethod === 'SPLIT' && (
-            <div className="bg-purple-50/60 border border-purple-200 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+            <div className="bg-purple-50/60 border border-purple-200 rounded-xl p-2.5 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-purple-950 flex items-center gap-1">
                   <Split className="w-3.5 h-3.5 text-purple-600" />
-                  <span>จ่ายทั้งเงินสดและเงินโอน (สลับจ่ายในบิลเดียว)</span>
+                  <span>จ่ายเงินสด + โอนเงิน</span>
                 </span>
-                <span className="text-xs font-bold text-purple-900">
+                <span className="font-bold text-purple-900">
                   รวม: {formatCurrency(grandTotal)}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Cash Portion */}
-                <div className="bg-white p-3 rounded-xl border border-purple-200 space-y-1">
-                  <label className="text-xs font-bold text-stone-700 block">
-                    💵 ส่วนที่ 1: จ่ายเป็นเงินสด (บาท)
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="bg-white p-2 rounded-lg border border-purple-200 space-y-1">
+                  <label className="text-[11px] font-bold text-stone-700 block">
+                    💵 เงินสด (บาท)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-purple-600">
-                      ฿
-                    </span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-purple-600">฿</span>
                     <input
                       type="number"
                       min="0"
@@ -1299,33 +1268,31 @@ export const POSView: React.FC<POSViewProps> = ({
                       step="1"
                       value={splitCashInput}
                       onChange={(e) => setSplitCashInput(e.target.value)}
-                      placeholder="ระบุยอดเงินสด"
-                      className="w-full bg-stone-50 border border-purple-200 focus:border-purple-500 rounded-lg pl-7 pr-3 py-1.5 text-sm font-bold text-stone-900 focus:outline-none font-mono"
+                      placeholder="0"
+                      className="w-full bg-stone-50 border border-purple-200 rounded-md pl-6 pr-2 py-1 text-xs font-bold text-stone-900 focus:outline-none font-mono"
                     />
                   </div>
                 </div>
 
-                {/* Transfer Portion (Calculated Automatically) */}
-                <div className="bg-white p-3 rounded-xl border border-purple-200 space-y-1">
-                  <label className="text-xs font-bold text-stone-700 block">
-                    📱 ส่วนที่ 2: ส่วนที่เหลือโอนเงิน (บาท)
+                <div className="bg-white p-2 rounded-lg border border-purple-200 space-y-1">
+                  <label className="text-[11px] font-bold text-stone-700 block">
+                    📱 ส่วนที่เหลือโอนเงิน (บาท)
                   </label>
-                  <div className="bg-stone-50 border border-purple-100 rounded-lg px-3 py-2 text-sm font-extrabold text-purple-900 font-mono flex items-center justify-between">
+                  <div className="bg-stone-50 border border-purple-100 rounded-md px-2.5 py-1 text-xs font-black text-purple-900 font-mono flex items-center justify-between">
                     <span>{formatCurrency(splitTransferAmount)}</span>
-                    <span className="text-[10px] text-purple-600 font-normal">คำนวณให้อัตโนมัติ</span>
+                    <span className="text-[10px] text-purple-600 font-normal">คำนวณอัตโนมัติ</span>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* 4. MEMBER PAYMENT DETAILS */}
           {paymentMethod === 'MEMBER' && (
-            <div className="bg-amber-50/80 border border-amber-300 rounded-2xl p-4 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+            <div className="bg-amber-50/80 border border-amber-300 rounded-xl p-2.5 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-amber-950 flex items-center gap-1">
                   <CreditCard className="w-3.5 h-3.5 text-amber-600" />
-                  <span>ชำระผ่านยอดเงินสมาชิก (Member Balance Wallet)</span>
+                  <span>ชำระผ่านกระเป๋าสมาชิก (Member Balance)</span>
                 </span>
                 {!selectedMember && (
                   <button
@@ -1339,13 +1306,13 @@ export const POSView: React.FC<POSViewProps> = ({
               </div>
 
               {selectedMember ? (
-                <div className="bg-white p-3.5 rounded-xl border border-amber-200 text-xs space-y-1.5">
+                <div className="bg-white p-2.5 rounded-lg border border-amber-200 text-xs space-y-1">
                   <div className="flex justify-between">
                     <span className="text-stone-500">ชื่อสมาชิก:</span>
                     <strong className="text-stone-900">{selectedMember.name} {selectedMember.nickname ? `(${selectedMember.nickname})` : ''}</strong>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-stone-500">ยอดคงเหลือก่อนหัก:</span>
+                    <span className="text-stone-500">คงเหลือก่อนหัก:</span>
                     <strong className="text-stone-800 font-mono">{formatCurrency(memberAvailableBalance)}</strong>
                   </div>
                   <div className="flex justify-between text-emerald-800 font-bold">
@@ -1353,29 +1320,29 @@ export const POSView: React.FC<POSViewProps> = ({
                     <span className="font-mono">-{formatCurrency(memberDeductedAmount)}</span>
                   </div>
                   <div className="flex justify-between pt-1 border-t border-stone-100 text-stone-900 font-black">
-                    <span>ยอดคงเหลือสุทธิหลังบิลนี้:</span>
+                    <span>คงเหลือสุทธิหลังบิลนี้:</span>
                     <span className="font-mono text-emerald-700">{formatCurrency(Math.max(0, memberAvailableBalance - memberDeductedAmount))}</span>
                   </div>
                 </div>
               ) : (
                 <p className="text-xs text-amber-800">
-                  กรุณาเลือกสมาชิกเพื่อใช้สิทธิ์และหักยอดเงินคงเหลือสมาชิกอัตโนมัติ
+                  กรุณาเลือกสมาชิกเพื่อหักยอดเงินคงเหลือสมาชิก
                 </p>
               )}
             </div>
           )}
 
           {/* Grand Total Display Box */}
-          <div className="bg-gradient-to-br from-[#FAF8F5] via-stone-50 to-[#F7F4EE] border border-[#E6DFD3] rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+          <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
             <div>
-              <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">
+              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
                 ยอดสุทธิที่ต้องชำระ (NET TO PAY)
               </span>
-              <div className="text-3xl sm:text-4xl font-black text-stone-900 font-mono tracking-tight mt-0.5 flex items-baseline gap-2">
+              <div className="text-2xl sm:text-3xl font-black text-stone-900 font-mono tracking-tight mt-0.5 flex items-baseline gap-2">
                 <span>{formatCurrency(grandTotal)}</span>
                 {memberDeductedAmount > 0 && (
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-lg font-sans">
-                    🧸 หักยอดสมาชิก -{formatCurrency(memberDeductedAmount)}
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded-md font-sans">
+                    🧸 หักสมาชิก -{formatCurrency(memberDeductedAmount)}
                   </span>
                 )}
               </div>
@@ -1383,14 +1350,14 @@ export const POSView: React.FC<POSViewProps> = ({
 
             <div className="text-right space-y-1">
               {memberDeductedAmount > 0 && grandTotal === 0 && (
-                <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 block shadow-2xs">
-                  ✅ ชำระครบถ้วนด้วยยอดสมาชิก (0฿)
+                <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300 block shadow-2xs">
+                  ✅ ชำระครบด้วยยอดสมาชิก (0฿)
                 </span>
               )}
               {totalDiscounts > 0 && (
                 <div>
-                  <span className="text-[11px] text-stone-500 mr-1.5">ส่วนลด:</span>
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  <span className="text-[10px] text-stone-500 mr-1">ส่วนลด:</span>
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
                     -{formatCurrency(totalDiscounts)}
                   </span>
                 </div>
@@ -1398,13 +1365,13 @@ export const POSView: React.FC<POSViewProps> = ({
             </div>
           </div>
 
-          {/* SAVE BILL BUTTON (NO POPUP MODAL - Instant Confirmation Toast) */}
-          <div className="pt-2">
+          {/* SAVE BILL BUTTON */}
+          <div className="pt-1">
             <button
               id="pos-submit-bill-button"
               type="submit"
               disabled={grandTotal <= 0 && rawSubtotal <= 0}
-              className={`w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 shadow-sm ${
+              className={`w-full py-3 rounded-xl font-black text-sm sm:text-base flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 shadow-xs ${
                 grandTotal > 0 || rawSubtotal > 0
                   ? 'brand-btn-primary hover:opacity-95 text-white hover:shadow-md'
                   : 'bg-stone-200 text-stone-400 cursor-not-allowed'
@@ -1419,7 +1386,7 @@ export const POSView: React.FC<POSViewProps> = ({
                   : {}
               }
             >
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-4 h-4" />
               <span>บันทึกบิลนี้ ({formatCurrency(grandTotal)})</span>
             </button>
           </div>
