@@ -755,7 +755,7 @@ export const CashDrawerView: React.FC<CashDrawerViewProps> = ({
                         type="number"
                         min="0"
                         value={count === 0 ? '' : count}
-                        placeholder="0"
+                        placeholder=""
                         onChange={(e) => handleDenomChange(denom, parseInt(e.target.value, 10) || 0)}
                         className="w-20 bg-white border border-stone-300 rounded-xl px-2.5 py-1.5 text-right font-mono font-bold text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                       />
@@ -927,8 +927,9 @@ export const CashDrawerView: React.FC<CashDrawerViewProps> = ({
                   type="number"
                   min="0"
                   required
-                  value={countedCash}
-                  onChange={(e) => setCountedCash(Number(e.target.value))}
+                  value={countedCash === 0 ? '' : countedCash}
+                  onChange={(e) => setCountedCash(e.target.value === '' ? 0 : Number(e.target.value))}
+                  placeholder="ระบุยอดเงินสดที่นับได้จริง"
                   className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 text-lg font-black font-mono text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
@@ -1009,8 +1010,9 @@ export const CashDrawerView: React.FC<CashDrawerViewProps> = ({
                   type="number"
                   min="0"
                   required
-                  value={newOpeningFloat}
-                  onChange={(e) => setNewOpeningFloat(Number(e.target.value))}
+                  value={newOpeningFloat === 0 ? '' : newOpeningFloat}
+                  onChange={(e) => setNewOpeningFloat(e.target.value === '' ? 0 : Number(e.target.value))}
+                  placeholder="ระบุเงินทอนตั้งต้น เช่น 3000"
                   className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 text-lg font-black font-mono text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>

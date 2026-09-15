@@ -225,23 +225,29 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     let splitTransferTotal = 0;
 
     completedBills.forEach((b) => {
-      // Payment Breakdown
+      const billTip = b.tipAmount || 0;
+      const billStoreSales = Math.max(0, b.grandTotal - billTip);
+
+      // Payment Breakdown of STORE SALES (Tips are excluded from store sales)
       if (b.paymentMethod === 'CASH') {
-        cashRevenue += b.grandTotal;
+        cashRevenue += billStoreSales;
       } else if (b.paymentMethod === 'TRANSFER' || b.paymentMethod === 'PROMPTPAY' || b.paymentMethod === 'CREDIT_CARD') {
-        transferRevenue += b.grandTotal;
+        transferRevenue += billStoreSales;
       } else if (b.paymentMethod === 'SPLIT') {
         const c = b.splitCashAmount || 0;
         const t = b.splitTransferAmount || Math.max(0, b.grandTotal - c);
-        cashRevenue += c;
-        transferRevenue += t;
+        if (b.grandTotal > 0) {
+          const ratio = billStoreSales / b.grandTotal;
+          cashRevenue += c * ratio;
+          transferRevenue += t * ratio;
+        }
         splitCashTotal += c;
         splitTransferTotal += t;
       } else if (b.paymentMethod === 'MEMBER') {
-        memberBalanceDeducted += b.grandTotal;
+        memberBalanceDeducted += billStoreSales;
       }
 
-      totalTips += b.tipAmount || 0;
+      totalTips += billTip;
       totalDiscount += b.discountTotal || 0;
       totalPointsDiscount += b.pointsDiscount || 0;
 
@@ -271,7 +277,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
     const grossSalesBeforeDiscount = grossHaircut + grossChemical + grossProduct + grossPackage + grossOther;
     const totalDiscountsGiven = totalDiscount + totalPointsDiscount;
-    const grandTotalRevenue = completedBills.reduce((s, b) => s + b.grandTotal, 0);
+    // Store sales revenue strictly excludes tips
+    const grandTotalRevenue = Math.max(0, grossSalesBeforeDiscount - totalDiscountsGiven);
 
     // Expenses Aggregates
     let totalExpenseAmount = 0;
@@ -422,7 +429,14 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   };
 
   // Filter bills & expenses
-  const dailyBills = bills.filter((b) => b.date.startsWith(selectedDate));
+  const dailyBills = bills
+    .filter((b) => b.date.startsWith(selectedDate))
+    .sort((a, b) => {
+      const timeA = new Date(a.date).getTime();
+      const timeB = new Date(b.date).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return (a.billNumber || '').localeCompare(b.billNumber || '');
+    });
   const dailyExpenses = expenses.filter((e) => e.date.startsWith(selectedDate));
   const dailyFinancials = calculateFinancialMetrics(dailyBills, dailyExpenses);
   const dailyBarberData = calculateBarberStats(dailyBills);
@@ -470,15 +484,23 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     let dayHeads = 0;
 
     dayBills.forEach((b) => {
+      const billTip = b.tipAmount || 0;
+      const billStoreSales = Math.max(0, b.grandTotal - billTip);
+
       if (b.paymentMethod === 'CASH') {
-        dayCash += b.grandTotal;
+        dayCash += billStoreSales;
       } else if (b.paymentMethod === 'TRANSFER' || b.paymentMethod === 'PROMPTPAY' || b.paymentMethod === 'CREDIT_CARD') {
-        dayTransfer += b.grandTotal;
+        dayTransfer += billStoreSales;
       } else if (b.paymentMethod === 'SPLIT') {
-        dayCash += b.splitCashAmount || 0;
-        dayTransfer += b.splitTransferAmount || 0;
+        const c = b.splitCashAmount || 0;
+        const t = b.splitTransferAmount || 0;
+        if (b.grandTotal > 0) {
+          const ratio = billStoreSales / b.grandTotal;
+          dayCash += c * ratio;
+          dayTransfer += t * ratio;
+        }
       } else if (b.paymentMethod === 'MEMBER') {
-        dayTransfer += b.grandTotal;
+        dayTransfer += billStoreSales;
       }
 
       const haircutItemCount = b.items.filter((i) => i.category === 'HAIRCUT').reduce((s, i) => s + i.quantity, 0);
@@ -2049,7 +2071,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-stone-200 max-h-[550px] overflow-y-auto">
+            <div className="overflow-x-auto rounded-2xl border border-stone-200">
               <table className="w-full text-xs text-left border-collapse">
                 <thead className="sticky top-0 bg-stone-100 text-stone-700 font-extrabold uppercase text-[10px] border-b border-stone-200 z-10 shadow-xs">
                   <tr>

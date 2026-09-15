@@ -285,6 +285,7 @@ export interface SalarySlip {
 export interface StoreSettings {
   storeName: string;
   storeSlogan: string;
+  email?: string;
   address: string;
   phone: string;
   taxId: string;

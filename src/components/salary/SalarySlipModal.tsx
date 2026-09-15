@@ -643,8 +643,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                           <div className="w-32">
                             <input
                               type="number"
-                              value={baseSalary}
-                              onChange={(e) => setBaseSalary(Number(e.target.value) || 0)}
+                              value={baseSalary === 0 ? '' : baseSalary}
+                              onChange={(e) => setBaseSalary(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                              placeholder="0"
                               className="w-full bg-stone-900 border border-cyan-500/50 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-cyan-300 focus:border-cyan-400 focus:outline-none"
                             />
                           </div>
@@ -661,8 +662,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                           <span className="text-[10px] text-stone-400">
                             จำนวนหัว: <input
                               type="number"
-                              value={headsCount}
-                              onChange={(e) => setHeadsCount(Number(e.target.value) || 0)}
+                              value={headsCount === 0 ? '' : headsCount}
+                              onChange={(e) => setHeadsCount(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                              placeholder="0"
                               className="w-12 bg-stone-900 border border-stone-700 rounded px-1 text-center text-amber-300 font-mono text-[11px]"
                             /> หัว
                           </span>
@@ -672,8 +674,8 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                             <label className="text-[9px] text-stone-400 block mb-0.5">ยอดขายบริการ (บาท):</label>
                             <input
                               type="number"
-                              value={haircutSalesTotal}
-                              onChange={(e) => handleUpdateHaircutSales(Number(e.target.value) || 0, haircutComPercent)}
+                              value={haircutSalesTotal === 0 ? '' : haircutSalesTotal}
+                              onChange={(e) => handleUpdateHaircutSales(e.target.value === '' ? 0 : Number(e.target.value) || 0, haircutComPercent)}
                               className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1 text-right text-xs font-mono text-stone-200 focus:border-amber-400 focus:outline-none"
                               placeholder="ยอดขายตัดผม"
                             />
@@ -682,8 +684,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                             <label className="text-[9px] text-stone-400 block mb-0.5">อัตราคอม (%):</label>
                             <input
                               type="number"
-                              value={haircutComPercent}
-                              onChange={(e) => handleUpdateHaircutSales(haircutSalesTotal, Number(e.target.value) || 0)}
+                              value={haircutComPercent === 0 ? '' : haircutComPercent}
+                              onChange={(e) => handleUpdateHaircutSales(haircutSalesTotal, e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                              placeholder="0"
                               className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1 text-right text-xs font-mono text-amber-300 focus:border-amber-400 focus:outline-none"
                             />
                           </div>
@@ -691,8 +694,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                             <label className="text-[9px] text-emerald-400 block mb-0.5 font-bold">คอมมิชชั่นที่ได้ (บาท):</label>
                             <input
                               type="number"
-                              value={haircutCommission}
-                              onChange={(e) => setHaircutCommission(Number(e.target.value) || 0)}
+                              value={haircutCommission === 0 ? '' : haircutCommission}
+                              onChange={(e) => setHaircutCommission(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                              placeholder="0"
                               className="w-full bg-stone-900 border border-emerald-500/50 rounded-lg px-2 py-1 text-right text-xs font-mono font-bold text-emerald-300 focus:border-emerald-400 focus:outline-none"
                             />
                           </div>
@@ -712,8 +716,8 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                             <label className="text-[9px] text-stone-400 block mb-0.5">ยอดขายเคมี (บาท):</label>
                             <input
                               type="number"
-                              value={chemicalSalesTotal}
-                              onChange={(e) => handleUpdateChemicalSales(Number(e.target.value) || 0, chemicalComPercent)}
+                              value={chemicalSalesTotal === 0 ? '' : chemicalSalesTotal}
+                              onChange={(e) => handleUpdateChemicalSales(e.target.value === '' ? 0 : Number(e.target.value) || 0, chemicalComPercent)}
                               className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1 text-right text-xs font-mono text-stone-200 focus:border-amber-400 focus:outline-none"
                               placeholder="ยอดขายเคมี"
                             />
@@ -722,8 +726,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                             <label className="text-[9px] text-stone-400 block mb-0.5">อัตราคอม (%):</label>
                             <input
                               type="number"
-                              value={chemicalComPercent}
-                              onChange={(e) => handleUpdateChemicalSales(chemicalSalesTotal, Number(e.target.value) || 0)}
+                              value={chemicalComPercent === 0 ? '' : chemicalComPercent}
+                              onChange={(e) => handleUpdateChemicalSales(chemicalSalesTotal, e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                              placeholder="0"
                               className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1 text-right text-xs font-mono text-purple-300 focus:border-purple-400 focus:outline-none"
                             />
                           </div>
@@ -731,8 +736,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                             <label className="text-[9px] text-emerald-400 block mb-0.5 font-bold">คอมมิชชั่นที่ได้ (บาท):</label>
                             <input
                               type="number"
-                              value={chemicalCommission}
-                              onChange={(e) => setChemicalCommission(Number(e.target.value) || 0)}
+                              value={chemicalCommission === 0 ? '' : chemicalCommission}
+                              onChange={(e) => setChemicalCommission(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                              placeholder="0"
                               className="w-full bg-stone-900 border border-emerald-500/50 rounded-lg px-2 py-1 text-right text-xs font-mono font-bold text-emerald-300 focus:border-emerald-400 focus:outline-none"
                             />
                           </div>
@@ -752,8 +758,8 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                             <label className="text-[9px] text-stone-400 block mb-0.5">ยอดขายสินค้า (บาท):</label>
                             <input
                               type="number"
-                              value={productSalesTotal}
-                              onChange={(e) => handleUpdateProductSales(Number(e.target.value) || 0, productComPercent)}
+                              value={productSalesTotal === 0 ? '' : productSalesTotal}
+                              onChange={(e) => handleUpdateProductSales(e.target.value === '' ? 0 : Number(e.target.value) || 0, productComPercent)}
                               className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1 text-right text-xs font-mono text-stone-200 focus:border-amber-400 focus:outline-none"
                               placeholder="ยอดขายสินค้า"
                             />
@@ -762,8 +768,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                             <label className="text-[9px] text-stone-400 block mb-0.5">อัตราคอม (%):</label>
                             <input
                               type="number"
-                              value={productComPercent}
-                              onChange={(e) => handleUpdateProductSales(productSalesTotal, Number(e.target.value) || 0)}
+                              value={productComPercent === 0 ? '' : productComPercent}
+                              onChange={(e) => handleUpdateProductSales(productSalesTotal, e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                              placeholder="0"
                               className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1 text-right text-xs font-mono text-blue-300 focus:border-blue-400 focus:outline-none"
                             />
                           </div>
@@ -771,8 +778,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                             <label className="text-[9px] text-emerald-400 block mb-0.5 font-bold">คอมมิชชั่นที่ได้ (บาท):</label>
                             <input
                               type="number"
-                              value={productCommission}
-                              onChange={(e) => setProductCommission(Number(e.target.value) || 0)}
+                              value={productCommission === 0 ? '' : productCommission}
+                              onChange={(e) => setProductCommission(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                              placeholder="0"
                               className="w-full bg-stone-900 border border-emerald-500/50 rounded-lg px-2 py-1 text-right text-xs font-mono font-bold text-emerald-300 focus:border-emerald-400 focus:outline-none"
                             />
                           </div>
@@ -823,8 +831,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                         <div className="w-32">
                           <input
                             type="number"
-                            value={positionAllowance}
-                            onChange={(e) => setPositionAllowance(Number(e.target.value) || 0)}
+                            value={positionAllowance === 0 ? '' : positionAllowance}
+                            onChange={(e) => setPositionAllowance(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                            placeholder="0"
                             className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-white focus:border-amber-400 focus:outline-none"
                           />
                         </div>
@@ -839,8 +848,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                         <div className="w-32">
                           <input
                             type="number"
-                            value={overtimePay}
-                            onChange={(e) => setOvertimePay(Number(e.target.value) || 0)}
+                            value={overtimePay === 0 ? '' : overtimePay}
+                            onChange={(e) => setOvertimePay(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                            placeholder="0"
                             className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-white focus:border-amber-400 focus:outline-none"
                           />
                         </div>
@@ -855,8 +865,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                         <div className="w-32">
                           <input
                             type="number"
-                            value={attendanceBonus}
-                            onChange={(e) => setAttendanceBonus(Number(e.target.value) || 0)}
+                            value={attendanceBonus === 0 ? '' : attendanceBonus}
+                            onChange={(e) => setAttendanceBonus(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                            placeholder="0"
                             className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-white focus:border-amber-400 focus:outline-none"
                           />
                         </div>
@@ -871,8 +882,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                         <div className="w-32">
                           <input
                             type="number"
-                            value={transportAllowance}
-                            onChange={(e) => setTransportAllowance(Number(e.target.value) || 0)}
+                            value={transportAllowance === 0 ? '' : transportAllowance}
+                            onChange={(e) => setTransportAllowance(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                            placeholder="0"
                             className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-white focus:border-amber-400 focus:outline-none"
                           />
                         </div>
@@ -887,8 +899,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                         <div className="w-32">
                           <input
                             type="number"
-                            value={tipTotal}
-                            onChange={(e) => setTipTotal(Number(e.target.value) || 0)}
+                            value={tipTotal === 0 ? '' : tipTotal}
+                            onChange={(e) => setTipTotal(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                            placeholder="0"
                             className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-amber-300 focus:border-amber-400 focus:outline-none"
                           />
                         </div>
@@ -903,8 +916,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                         <div className="w-32">
                           <input
                             type="number"
-                            value={specialBonus}
-                            onChange={(e) => setSpecialBonus(Number(e.target.value) || 0)}
+                            value={specialBonus === 0 ? '' : specialBonus}
+                            onChange={(e) => setSpecialBonus(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                            placeholder="0"
                             className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-white focus:border-amber-400 focus:outline-none"
                           />
                         </div>
@@ -925,8 +939,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                         <div className="w-32">
                           <input
                             type="number"
-                            value={otherEarnings}
-                            onChange={(e) => setOtherEarnings(Number(e.target.value) || 0)}
+                            value={otherEarnings === 0 ? '' : otherEarnings}
+                            onChange={(e) => setOtherEarnings(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                            placeholder="0"
                             className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-white focus:border-amber-400 focus:outline-none"
                           />
                         </div>
@@ -967,8 +982,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                       <div className="w-32">
                         <input
                           type="number"
-                          value={advanceDeduction}
-                          onChange={(e) => setAdvanceDeduction(Number(e.target.value) || 0)}
+                          value={advanceDeduction === 0 ? '' : advanceDeduction}
+                          onChange={(e) => setAdvanceDeduction(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                          placeholder="0"
                           className="w-full bg-stone-950 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-rose-300 focus:border-rose-400 focus:outline-none"
                         />
                       </div>
@@ -1008,8 +1024,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                       <div className="w-32">
                         <input
                           type="number"
-                          value={socialSecurity}
-                          onChange={(e) => setSocialSecurity(Number(e.target.value) || 0)}
+                          value={socialSecurity === 0 ? '' : socialSecurity}
+                          onChange={(e) => setSocialSecurity(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                          placeholder="0"
                           className="w-full bg-stone-950 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-rose-300 focus:border-rose-400 focus:outline-none"
                         />
                       </div>
@@ -1028,10 +1045,10 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                         <div className="w-32">
                           <input
                             type="number"
-                            value={taxDeduction}
-                            onChange={(e) => setTaxDeduction(Number(e.target.value) || 0)}
+                            value={taxDeduction === 0 ? '' : taxDeduction}
+                            onChange={(e) => setTaxDeduction(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                            placeholder="0"
                             className="w-full bg-stone-950 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-rose-300 focus:border-rose-400 focus:outline-none"
-                            placeholder="จำนวนเงินภาษี"
                           />
                         </div>
                       </div>
@@ -1072,8 +1089,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                       <div className="w-32">
                         <input
                           type="number"
-                          value={providentFund}
-                          onChange={(e) => setProvidentFund(Number(e.target.value) || 0)}
+                          value={providentFund === 0 ? '' : providentFund}
+                          onChange={(e) => setProvidentFund(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                          placeholder="0"
                           className="w-full bg-stone-950 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-rose-300 focus:border-rose-400 focus:outline-none"
                         />
                       </div>
@@ -1088,8 +1106,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                       <div className="w-32">
                         <input
                           type="number"
-                          value={lateAbsenceDeduction}
-                          onChange={(e) => setLateAbsenceDeduction(Number(e.target.value) || 0)}
+                          value={lateAbsenceDeduction === 0 ? '' : lateAbsenceDeduction}
+                          onChange={(e) => setLateAbsenceDeduction(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                          placeholder="0"
                           className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-rose-300 focus:border-rose-400 focus:outline-none"
                         />
                       </div>
@@ -1104,8 +1123,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                       <div className="w-32">
                         <input
                           type="number"
-                          value={uniformToolDeduction}
-                          onChange={(e) => setUniformToolDeduction(Number(e.target.value) || 0)}
+                          value={uniformToolDeduction === 0 ? '' : uniformToolDeduction}
+                          onChange={(e) => setUniformToolDeduction(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                          placeholder="0"
                           className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-rose-300 focus:border-rose-400 focus:outline-none"
                         />
                       </div>
@@ -1126,8 +1146,9 @@ export const SalarySlipModal: React.FC<SalarySlipModalProps> = ({
                       <div className="w-32">
                         <input
                           type="number"
-                          value={otherDeduction}
-                          onChange={(e) => setOtherDeduction(Number(e.target.value) || 0)}
+                          value={otherDeduction === 0 ? '' : otherDeduction}
+                          onChange={(e) => setOtherDeduction(e.target.value === '' ? 0 : Number(e.target.value) || 0)}
+                          placeholder="0"
                           className="w-full bg-stone-900 border border-stone-700 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-rose-300 focus:border-rose-400 focus:outline-none"
                         />
                       </div>

@@ -521,7 +521,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     required
                     value={editingExpense.amount || ''}
                     onChange={(e) => setEditingExpense({ ...editingExpense, amount: parseFloat(e.target.value) || 0 })}
-                    placeholder="0.00"
+                    placeholder="ระบุจำนวนเงิน"
                     className="w-full bg-stone-50 border border-stone-300 focus:border-rose-500 rounded-xl px-3 py-2 text-xs text-rose-600 font-bold font-mono focus:outline-none"
                   />
                 </div>

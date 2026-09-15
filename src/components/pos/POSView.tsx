@@ -590,9 +590,7 @@ export const POSView: React.FC<POSViewProps> = ({
 
           <div className="px-3 py-1.5 rounded-xl bg-stone-50 border border-stone-200/60 text-xs text-stone-600">
             <span>บิลวันนี้: </span>
-            <strong className="text-stone-900 font-extrabold">{todayCompletedBills.length}</strong>
-            <span className="text-stone-300 mx-1.5">|</span>
-            <strong className="text-emerald-700 font-extrabold">{formatCurrency(todaySalesSum)}</strong>
+            <strong className="text-stone-900 font-extrabold">{todayCompletedBills.length} บิล</strong>
           </div>
 
           <button
@@ -854,7 +852,7 @@ export const POSView: React.FC<POSViewProps> = ({
                   step="1"
                   value={haircutFeeInput}
                   onChange={(e) => setHaircutFeeInput(e.target.value)}
-                  placeholder="0"
+                  placeholder="ระบุราคาตัดผม"
                   className="w-full bg-white border border-stone-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 rounded-xl pl-7 pr-3 py-2 text-base font-extrabold text-stone-800 focus:outline-none font-mono"
                 />
               </div>
@@ -880,7 +878,7 @@ export const POSView: React.FC<POSViewProps> = ({
                   step="1"
                   value={chemicalFeeInput}
                   onChange={(e) => setChemicalFeeInput(e.target.value)}
-                  placeholder="0"
+                  placeholder="ระบุราคาเคมี"
                   className="w-full bg-white border border-stone-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 rounded-xl pl-7 pr-3 py-2 text-base font-extrabold text-stone-800 focus:outline-none font-mono"
                 />
               </div>
@@ -893,7 +891,7 @@ export const POSView: React.FC<POSViewProps> = ({
                   <Heart className="w-3.5 h-3.5 text-pink-500" />
                   <span>ค่าทิปช่าง</span>
                 </span>
-                <span className="text-[10px] text-stone-400">บาท (฿)</span>
+                <span className="text-[10px] text-pink-700 font-bold">ไม่รวมยอดขายร้าน</span>
               </label>
 
               <div className="relative">
@@ -906,7 +904,7 @@ export const POSView: React.FC<POSViewProps> = ({
                   step="1"
                   value={tipAmountInput}
                   onChange={(e) => setTipAmountInput(e.target.value)}
-                  placeholder="0"
+                  placeholder="ระบุยอดทิป"
                   className="w-full bg-white border border-stone-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-100 rounded-xl pl-7 pr-3 py-2 text-base font-extrabold text-stone-800 focus:outline-none font-mono"
                 />
               </div>
@@ -914,16 +912,16 @@ export const POSView: React.FC<POSViewProps> = ({
           </div>
         </div>
 
-        {/* SECTION 4: PRODUCT DROPDOWN & QUANTITY (เลือกสินค้าหน้าร้าน) */}
+        {/* SECTION 4: RETAIL PRODUCTS (เลือกสินค้าหน้าร้าน) */}
         <div className="bg-white border border-stone-200/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
                 <ShoppingBag className="w-3.5 h-3.5 text-stone-400" />
-                <span>4. เลือกสินค้าหน้าร้าน (ดรอปดาวน์)</span>
+                <span>4. เลือกสินค้าหน้าร้าน</span>
               </h2>
               <p className="text-[11px] text-stone-400">
-                เลือกสินค้าจากเมนูดรอปดาวน์ ระบุจำนวน และคำนวณราคารวมอัตโนมัติ
+                เลือกสินค้า ระบุจำนวน และคำนวณราคารวมอัตโนมัติ
               </p>
             </div>
 
@@ -992,13 +990,21 @@ export const POSView: React.FC<POSViewProps> = ({
                         <input
                           type="number"
                           min="1"
-                          value={line.quantity}
+                          value={line.quantity === 0 ? '' : line.quantity}
                           onChange={(e) => {
-                            const val = parseInt(e.target.value, 10) || 1;
+                            const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10) || 0;
                             setProductLines(prev => prev.map(item => 
-                              item.id === line.id ? { ...item, quantity: Math.max(1, val) } : item
+                              item.id === line.id ? { ...item, quantity: val } : item
                             ));
                           }}
+                          onBlur={() => {
+                            if (line.quantity <= 0) {
+                              setProductLines(prev => prev.map(item => 
+                                item.id === line.id ? { ...item, quantity: 1 } : item
+                              ));
+                            }
+                          }}
+                          placeholder="1"
                           className="w-10 text-center bg-transparent text-xs font-bold text-stone-800 focus:outline-none"
                         />
                         <button
@@ -1157,6 +1163,7 @@ export const POSView: React.FC<POSViewProps> = ({
             <div className="bg-stone-50 p-2.5 rounded-xl border border-stone-200/60">
               <span className="text-stone-400 block text-[11px]">ค่าทิปช่าง:</span>
               <strong className="text-pink-600 font-bold">{formatCurrency(tipAmount)}</strong>
+              <span className="text-[9px] text-pink-700 block font-medium mt-0.5">*ไม่รวมยอดขายร้าน</span>
             </div>
           </div>
 
@@ -1292,7 +1299,7 @@ export const POSView: React.FC<POSViewProps> = ({
                       step="1"
                       value={splitCashInput}
                       onChange={(e) => setSplitCashInput(e.target.value)}
-                      placeholder="0"
+                      placeholder="ระบุยอดเงินสด"
                       className="w-full bg-stone-50 border border-purple-200 focus:border-purple-500 rounded-lg pl-7 pr-3 py-1.5 text-sm font-bold text-stone-900 focus:outline-none font-mono"
                     />
                   </div>

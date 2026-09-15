@@ -369,7 +369,12 @@ export function subscribeBills(storeEmail: string, callback: (bills: Bill[]) => 
     snap.forEach((docSnap) => {
       list.push({ ...docSnap.data(), id: docSnap.id } as Bill);
     });
-    list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    list.sort((a, b) => {
+      const timeA = new Date(a.date).getTime();
+      const timeB = new Date(b.date).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return (a.billNumber || '').localeCompare(b.billNumber || '');
+    });
     callback(list);
   }, (err) => {
     console.error('Firestore bills subscription error:', err);

@@ -19,7 +19,7 @@ export const QuickAddMemberModal: React.FC<QuickAddMemberModalProps> = ({
   const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState(initialPhone);
   const [packageLevel, setPackageLevel] = useState('Silver');
-  const [balance, setBalance] = useState<string>('0');
+  const [balance, setBalance] = useState<string>('');
   const [notes, setNotes] = useState('');
 
   if (!isOpen) return null;
@@ -145,7 +145,7 @@ export const QuickAddMemberModal: React.FC<QuickAddMemberModalProps> = ({
                 step="1"
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
-                placeholder="0"
+                placeholder="ระบุยอดเงินเริ่มต้น"
                 className="w-full bg-emerald-50 border border-emerald-300 focus:border-emerald-500 focus:bg-white rounded-xl px-3 py-2 text-xs font-black font-mono text-emerald-950 focus:outline-none"
               />
             </div>

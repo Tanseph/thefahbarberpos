@@ -3,22 +3,21 @@ import { Barber, Bill, CartItem, PaymentMethod } from '../../types';
 import { 
   X, 
   Save, 
-  AlertCircle, 
   Scissors, 
   Wallet, 
   CreditCard, 
   QrCode, 
   Split, 
   User, 
-  HeartHandshake, 
   Calendar, 
-  Clock, 
   Receipt,
   Plus,
   Trash2,
-  CheckCircle2,
   Layers,
-  RotateCcw
+  RotateCcw,
+  ShoppingBag,
+  FlaskConical,
+  Heart
 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { UnmergeConfirmModal } from './UnmergeConfirmModal';
@@ -46,7 +45,6 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
   const [isUnmergeModalOpen, setIsUnmergeModalOpen] = useState<boolean>(false);
   
   const [memberName, setMemberName] = useState<string>(bill?.memberName || '');
-  const [memberPhone, setMemberPhone] = useState<string>(bill?.memberPhone || '');
   
   const [items, setItems] = useState<CartItem[]>(() => bill?.items ? JSON.parse(JSON.stringify(bill.items)) : []);
   const [tipAmount, setTipAmount] = useState<number>(bill?.tipAmount || 0);
@@ -62,27 +60,32 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
       setSplitCash(bill.splitCashAmount || 0);
       setSplitTransfer(bill.splitTransferAmount || 0);
       setMemberName(bill.memberName || '');
-      setMemberPhone(bill.memberPhone || '');
       setItems(JSON.parse(JSON.stringify(bill.items || [])));
       setTipAmount(bill.tipAmount || 0);
-      setTipBarberId(bill.tipBarberId || (bill.items?.[0]?.barberId || ''));
+      setTipBarberId(bill.tipBarberId || (bill.items?.[0]?.barberId || (barbers[0]?.id || '')));
       setBillDate(bill.date ? bill.date.slice(0, 16) : new Date().toISOString().slice(0, 16));
       setNotes(bill.notes || '');
     }
-  }, [bill]);
+  }, [bill, barbers]);
 
   // Calculate dynamic totals
   const itemsSubtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const itemsDiscount = items.reduce((sum, item) => sum + ((item.discount || 0) * item.quantity), 0);
   const pointsDiscount = bill?.pointsDiscount || 0;
   const totalDiscount = itemsDiscount + pointsDiscount;
-  const grandTotal = Math.max(0, itemsSubtotal - totalDiscount) + tipAmount;
+  const storeSales = Math.max(0, itemsSubtotal - totalDiscount);
+  const grandTotal = storeSales + tipAmount;
+
+  // Categorized item lists for direct numeric inputs (no quantity)
+  const haircutItems = items.filter((it) => it.category === 'HAIRCUT');
+  const chemicalItem = items.find((it) => it.category === 'CHEMICAL');
+  const productItems = items.filter((it) => it.category === 'PRODUCT');
+  const otherItems = items.filter((it) => it.category !== 'HAIRCUT' && it.category !== 'CHEMICAL' && it.category !== 'PRODUCT');
 
   // Auto-balance split payment amounts if total changes or method switched
   useEffect(() => {
     if (paymentMethod === 'SPLIT') {
       if (splitCash + splitTransfer !== grandTotal) {
-        // default split 50/50 or adjust transfer
         const half = Math.round(grandTotal / 2);
         setSplitCash(half);
         setSplitTransfer(grandTotal - half);
@@ -99,15 +102,112 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
           ...copy[index],
           barberId: value,
           barberName: selectedB ? selectedB.nickname : copy[index].barberName,
+          quantity: 1,
         };
       } else {
         copy[index] = {
           ...copy[index],
           [field]: value,
+          quantity: 1,
         };
       }
       return copy;
     });
+  };
+
+  const handleChemicalPriceChange = (newPrice: number) => {
+    setItems((prev) => {
+      const chemIndex = prev.findIndex((it) => it.category === 'CHEMICAL');
+      if (chemIndex >= 0) {
+        const copy = [...prev];
+        copy[chemIndex] = {
+          ...copy[chemIndex],
+          price: newPrice,
+          quantity: 1,
+        };
+        return copy;
+      } else {
+        const defaultBarber = barbers.find((b) => b.id === (items[0]?.barberId)) || barbers[0];
+        const newChem: CartItem = {
+          id: `chem-${Date.now()}`,
+          serviceId: 'srv-chem-custom',
+          name: 'ค่าเคมี',
+          category: 'CHEMICAL',
+          price: newPrice,
+          quantity: 1,
+          discount: 0,
+          barberId: defaultBarber?.id || '',
+          barberName: defaultBarber?.nickname || '',
+        };
+        return [...prev, newChem];
+      }
+    });
+  };
+
+  const handleChemicalBarberChange = (barberId: string) => {
+    const selectedB = barbers.find((b) => b.id === barberId);
+    setItems((prev) => {
+      const chemIndex = prev.findIndex((it) => it.category === 'CHEMICAL');
+      if (chemIndex >= 0) {
+        const copy = [...prev];
+        copy[chemIndex] = {
+          ...copy[chemIndex],
+          barberId,
+          barberName: selectedB ? selectedB.nickname : copy[chemIndex].barberName,
+          quantity: 1,
+        };
+        return copy;
+      } else {
+        const newChem: CartItem = {
+          id: `chem-${Date.now()}`,
+          serviceId: 'srv-chem-custom',
+          name: 'ค่าเคมี',
+          category: 'CHEMICAL',
+          price: 0,
+          quantity: 1,
+          discount: 0,
+          barberId,
+          barberName: selectedB ? selectedB.nickname : '',
+        };
+        return [...prev, newChem];
+      }
+    });
+  };
+
+  const handleRemoveChemical = () => {
+    setItems((prev) => prev.filter((it) => it.category !== 'CHEMICAL'));
+  };
+
+  const handleAddProduct = () => {
+    const defaultBarber = barbers.find((b) => b.id === (items[0]?.barberId)) || barbers[0];
+    const newProd: CartItem = {
+      id: `prod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      serviceId: `srv-prod-${Date.now()}`,
+      name: 'สินค้าหน้าร้าน',
+      category: 'PRODUCT',
+      price: 0,
+      quantity: 1,
+      discount: 0,
+      barberId: defaultBarber?.id || '',
+      barberName: defaultBarber?.nickname || '',
+    };
+    setItems((prev) => [...prev, newProd]);
+  };
+
+  const handleAddHaircut = () => {
+    const defaultBarber = barbers.find((b) => b.id === (items[0]?.barberId)) || barbers[0];
+    const newHaircut: CartItem = {
+      id: `haircut-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      serviceId: `srv-haircut-${Date.now()}`,
+      name: 'ค่าตัดผม',
+      category: 'HAIRCUT',
+      price: 0,
+      quantity: 1,
+      discount: 0,
+      barberId: defaultBarber?.id || '',
+      barberName: defaultBarber?.nickname || '',
+    };
+    setItems((prev) => [...prev, newHaircut]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -125,12 +225,33 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
       return;
     }
 
+    // Keep items that have price > 0, ensuring quantity is 1
+    // If all items have price 0, keep at least one item
+    const validItems = items.filter((it) => it.price > 0).map((it) => ({ ...it, quantity: 1 }));
+    const finalItems = validItems.length > 0 
+      ? validItems 
+      : items.length > 0 
+        ? [{ ...items[0], quantity: 1 }] 
+        : [
+            {
+              id: `item-${Date.now()}`,
+              serviceId: 'srv-custom',
+              name: 'ค่าบริการ',
+              category: 'HAIRCUT' as const,
+              price: 0,
+              quantity: 1,
+              discount: 0,
+              barberId: barbers[0]?.id || '',
+              barberName: barbers[0]?.nickname || '',
+            }
+          ];
+
     const updatedBill: Bill = {
       ...bill,
       date: billDate.length === 16 ? `${billDate}:00` : billDate,
       memberName: memberName.trim() || 'ลูกค้าทั่วไป (Walk-in)',
-      memberPhone: memberPhone.trim(),
-      items,
+      memberPhone: bill.memberPhone, // Keep existing phone in data record without phone input in UI
+      items: finalItems,
       subtotal: itemsSubtotal,
       discountTotal: totalDiscount,
       tipAmount,
@@ -151,12 +272,12 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in">
-      <div className="bg-white border border-stone-200 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col justify-between shadow-2xl text-stone-800 overflow-hidden">
+      <div className="bg-white border border-stone-200 rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col justify-between shadow-2xl text-stone-800 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-stone-200 bg-stone-50/80">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-stone-200 bg-stone-50/90">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white font-black flex items-center justify-center shadow-xs">
-              <Receipt className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-amber-500 text-stone-950 font-black flex items-center justify-center shadow-xs">
+              <Receipt className="w-5 h-5 stroke-[2.5]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -170,7 +291,7 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-stone-500">
-                ปรับแก้วิธีชำระเงิน, สลับช่าง, แก้ไขทิป หรือข้อมูลลูกค้า
+                แก้ไขรายการบริการ/สินค้า กรอกราคา สลับช่าง หรือปรับยอดชำระ
               </p>
             </div>
           </div>
@@ -219,15 +340,15 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
             </div>
           )}
 
-          {/* 1. PAYMENT METHOD SWITCHER (Main Requirement) */}
-          <div className="bg-amber-50/70 border border-amber-200/90 rounded-2xl p-4 space-y-3">
+          {/* 1. PAYMENT METHOD SWITCHER */}
+          <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-black text-amber-950 flex items-center gap-1.5">
                 <Wallet className="w-4 h-4 text-amber-700" />
-                วิธีชำระเงิน (สลับได้ทันที หากบันทึกผิด):
+                วิธีชำระเงิน:
               </label>
               <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-lg">
-                เลือกวิธีที่ถูกต้อง
+                เลือกวิธีที่ต้องการ
               </span>
             </div>
 
@@ -297,13 +418,14 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                       type="number"
                       min="0"
                       max={grandTotal}
-                      value={splitCash}
+                      value={splitCash === 0 ? '' : splitCash}
                       onChange={(e) => {
-                        const val = Math.max(0, parseFloat(e.target.value) || 0);
+                        const val = e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0);
                         setSplitCash(val);
                         setSplitTransfer(Math.max(0, grandTotal - val));
                       }}
-                      className="w-full bg-emerald-50/50 border border-emerald-300 rounded-xl px-3 py-1.5 text-xs font-black text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      placeholder="ระบุยอดเงินสด"
+                      className="w-full bg-emerald-50/50 border border-emerald-300 rounded-xl pl-3 pr-7 py-2 text-sm font-black text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 font-mono"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
                   </div>
@@ -318,13 +440,14 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                       type="number"
                       min="0"
                       max={grandTotal}
-                      value={splitTransfer}
+                      value={splitTransfer === 0 ? '' : splitTransfer}
                       onChange={(e) => {
-                        const val = Math.max(0, parseFloat(e.target.value) || 0);
+                        const val = e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0);
                         setSplitTransfer(val);
                         setSplitCash(Math.max(0, grandTotal - val));
                       }}
-                      className="w-full bg-cyan-50/50 border border-cyan-300 rounded-xl px-3 py-1.5 text-xs font-black text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                      placeholder="ระบุยอดเงินโอน"
+                      className="w-full bg-cyan-50/50 border border-cyan-300 rounded-xl pl-3 pr-7 py-2 text-sm font-black text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-400 font-mono"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
                   </div>
@@ -340,37 +463,26 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
             )}
           </div>
 
-          {/* 2. CUSTOMER & DATE INFO */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* 2. CUSTOMER & DATE INFO (NO PHONE FIELD) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-stone-700 block mb-1">
-                ชื่อลูกค้า:
+              <label className="text-xs font-bold text-stone-700 block mb-1 flex items-center gap-1">
+                <User className="w-3.5 h-3.5 text-stone-400" />
+                <span>ชื่อลูกค้า (Customer Name):</span>
               </label>
               <input
                 type="text"
                 value={memberName}
                 onChange={(e) => setMemberName(e.target.value)}
-                placeholder="กรุณากรอกชื่อลูกค้า"
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-amber-400 focus:bg-white"
+                placeholder="ระบุชื่อลูกค้า เช่น ลูกค้าทั่วไป (Walk-in)"
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-amber-400 focus:bg-white font-medium"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-stone-700 block mb-1">
-                เบอร์โทรศัพท์:
-              </label>
-              <input
-                type="text"
-                value={memberPhone}
-                onChange={(e) => setMemberPhone(e.target.value)}
-                placeholder="08X-XXX-XXXX"
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-amber-400 focus:bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-stone-700 block mb-1">
-                วันและเวลาที่ทำรายการ:
+              <label className="text-xs font-bold text-stone-700 block mb-1 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-stone-400" />
+                <span>วันและเวลาที่ทำรายการ:</span>
               </label>
               <input
                 type="datetime-local"
@@ -381,94 +493,322 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
             </div>
           </div>
 
-          {/* 3. ITEMS & BARBERS LIST */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
-                <Scissors className="w-4 h-4 text-amber-600" /> รายการบริการ / สินค้า & ช่างผู้ให้บริการ:
+          {/* 3. ITEMS & SERVICES / PRODUCTS PRICING (DIRECT NUMERIC INPUTS - NO QUANTITY) */}
+          <div className="space-y-3.5">
+            <div>
+              <label className="text-xs font-black text-stone-900 flex items-center gap-1.5">
+                <Scissors className="w-4 h-4 text-amber-600" /> 
+                <span>รายการค่าบริการและสินค้า:</span>
               </label>
-              <span className="text-[11px] text-stone-500">เปลี่ยนช่างผู้รับงานได้</span>
+              <p className="text-[11px] text-stone-500">
+                กรอกตัวเลขราคาได้ทันทีในแต่ละช่อง ไม่ต้องกรอกจำนวน
+              </p>
             </div>
 
-            <div className="border border-stone-200 rounded-2xl divide-y divide-stone-200 overflow-hidden">
-              {items.map((item, idx) => (
-                <div key={item.id || idx} className="p-3 bg-stone-50/50 hover:bg-stone-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={item.name}
-                      onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
-                      className="font-bold text-xs text-stone-900 bg-transparent border-b border-transparent focus:border-amber-400 focus:outline-none w-full"
-                    />
-                    <span className="text-[10px] text-stone-500 block">
-                      หมวดหมู่: {item.category}
-                    </span>
+            {/* 3.1 งานตัดผม (HAIRCUT) */}
+            <div className="bg-amber-50/50 border border-amber-200/80 rounded-2xl p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-amber-950 flex items-center gap-1.5">
+                  <Scissors className="w-3.5 h-3.5 text-amber-600" />
+                  <span>ค่าตัดผม (Haircut Fee)</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAddHaircut}
+                  className="text-[11px] font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1 cursor-pointer bg-white px-2 py-0.5 rounded-lg border border-amber-300 shadow-2xs hover:bg-amber-50 active:scale-95"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>+ เพิ่มรายการตัดผม</span>
+                </button>
+              </div>
+
+              {haircutItems.length === 0 ? (
+                <div className="text-xs text-stone-400 italic py-1">
+                  ไม่มีรายการตัดผมในบิลนี้ (กดปุ่ม + เพิ่มรายการตัดผม เพื่อระบุราคา)
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {haircutItems.map((item) => {
+                    const itemIdx = items.findIndex((it) => it.id === item.id);
+                    return (
+                      <div key={item.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2.5 rounded-xl border border-amber-200/70 shadow-2xs">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={item.name}
+                            onChange={(e) => handleItemChange(itemIdx, 'name', e.target.value)}
+                            placeholder="ระบุชื่อบริการ เช่น ค่าตัดผม"
+                            className="w-full text-xs font-bold text-stone-900 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-amber-500 focus:outline-none py-1"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="space-y-0.5">
+                            <select
+                              value={item.barberId || ''}
+                              onChange={(e) => handleItemChange(itemIdx, 'barberId', e.target.value)}
+                              className="bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-stone-800 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
+                            >
+                              {barbers.map((b) => (
+                                <option key={b.id} value={b.id}>
+                                  ช่าง{b.nickname}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="relative w-32">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={item.price === 0 ? '' : item.price}
+                              onChange={(e) => handleItemChange(itemIdx, 'price', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                              placeholder="ระบุราคา"
+                              className="w-full bg-stone-50 border border-amber-300 focus:border-amber-500 rounded-xl pl-3 pr-7 py-1.5 text-sm font-black text-right text-stone-900 focus:outline-none font-mono shadow-2xs"
+                            />
+                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
+                          </div>
+
+                          {items.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(itemIdx)}
+                              className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                              title="ลบรายการนี้"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 3.2 งานเคมี (CHEMICAL) - เอาออกมาเป็นช่องกรอกตัวเลขเลย จำนวนไม่ต้อง */}
+            <div className="bg-cyan-50/50 border border-cyan-200/80 rounded-2xl p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-cyan-950 flex items-center gap-1.5">
+                  <FlaskConical className="w-3.5 h-3.5 text-cyan-600" />
+                  <span>ค่าเคมี (Chemical Fee: ดัด / ยืด / ทำสี)</span>
+                </span>
+                {chemicalItem && chemicalItem.price > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveChemical}
+                    className="text-[11px] font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1 cursor-pointer bg-white px-2 py-0.5 rounded-lg border border-rose-200 shadow-2xs hover:bg-rose-50 active:scale-95"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>ล้างค่าเคมี</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2.5 rounded-xl border border-cyan-200/70 shadow-2xs">
+                <div className="flex-1">
+                  <span className="text-xs font-bold text-stone-700 block">
+                    {chemicalItem?.name || 'ค่าเคมี (ดัด / ยืด / สี)'}
+                  </span>
+                  <span className="text-[10px] text-stone-400">
+                    ช่องกรอกตัวเลขค่าเคมีโดยตรง
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="space-y-0.5">
+                    <select
+                      value={chemicalItem?.barberId || (items[0]?.barberId || (barbers[0]?.id || ''))}
+                      onChange={(e) => handleChemicalBarberChange(e.target.value)}
+                      className="bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-stone-800 focus:outline-none focus:border-cyan-500 cursor-pointer shadow-2xs"
+                    >
+                      {barbers.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          ช่าง{b.nickname}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Barber selection */}
-                    <div className="flex items-center gap-1">
-                      <span className="text-[11px] text-stone-500">ช่าง:</span>
-                      <select
-                        value={item.barberId}
-                        onChange={(e) => handleItemChange(idx, 'barberId', e.target.value)}
-                        className="bg-white border border-stone-300 rounded-lg px-2 py-1 text-xs font-bold text-amber-900 focus:outline-none focus:border-amber-500 cursor-pointer"
-                      >
-                        {barbers.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            ช่าง{b.nickname}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Quantity */}
-                    <div className="flex items-center gap-1">
-                      <span className="text-[11px] text-stone-500">จำนวน:</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-12 bg-white border border-stone-300 rounded-lg px-2 py-1 text-xs font-bold text-center focus:outline-none focus:border-amber-400"
-                      />
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-center gap-1">
-                      <span className="text-[11px] text-stone-500">ราคา:</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.price}
-                        onChange={(e) => handleItemChange(idx, 'price', Math.max(0, parseFloat(e.target.value) || 0))}
-                        className="w-20 bg-white border border-stone-300 rounded-lg px-2 py-1 text-xs font-black text-right text-stone-900 focus:outline-none focus:border-amber-400"
-                      />
-                      <span className="text-[11px] text-stone-400">฿</span>
-                    </div>
-
-                    {/* Delete Item Button */}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveItem(idx)}
-                      className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                      title="ลบรายการ"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  <div className="relative w-32">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={chemicalItem?.price === 0 ? '' : (chemicalItem?.price ?? '')}
+                      onChange={(e) => handleChemicalPriceChange(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                      placeholder="ระบุราคาเคมี"
+                      className="w-full bg-stone-50 border border-cyan-300 focus:border-cyan-500 rounded-xl pl-3 pr-7 py-1.5 text-sm font-black text-right text-stone-900 focus:outline-none font-mono shadow-2xs"
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
+
+            {/* 3.3 สินค้าหน้าร้าน / เพิ่มสินค้า (PRODUCT) - เอาออกมาเป็นช่องกรอกตัวเลขเลย จำนวนไม่ต้อง */}
+            <div className="bg-purple-50/50 border border-purple-200/80 rounded-2xl p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-purple-950 flex items-center gap-1.5">
+                  <ShoppingBag className="w-3.5 h-3.5 text-purple-600" />
+                  <span>สินค้าหน้าร้าน (Retail Products)</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAddProduct}
+                  className="text-[11px] font-bold text-purple-900 hover:text-purple-950 flex items-center gap-1 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-purple-300 shadow-2xs hover:bg-purple-50 active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5 text-purple-700 stroke-[2.5]" />
+                  <span>+ เพิ่มสินค้า</span>
+                </button>
+              </div>
+
+              {productItems.length === 0 ? (
+                <div className="text-xs text-stone-400 italic py-1 flex items-center justify-between">
+                  <span>ยังไม่มีรายการสินค้าในบิลนี้</span>
+                  <button
+                    type="button"
+                    onClick={handleAddProduct}
+                    className="text-purple-700 font-bold hover:underline cursor-pointer text-[11px]"
+                  >
+                    กดเพื่อเพิ่มสินค้าและกรอกราคา
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {productItems.map((item) => {
+                    const itemIdx = items.findIndex((it) => it.id === item.id);
+                    return (
+                      <div key={item.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2.5 rounded-xl border border-purple-200/70 shadow-2xs">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={item.name}
+                            onChange={(e) => handleItemChange(itemIdx, 'name', e.target.value)}
+                            placeholder="ระบุชื่อสินค้า เช่น แว็กซ์, เจล, แชมพู"
+                            className="w-full text-xs font-bold text-stone-900 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-purple-500 focus:outline-none py-1"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="space-y-0.5">
+                            <select
+                              value={item.barberId || ''}
+                              onChange={(e) => handleItemChange(itemIdx, 'barberId', e.target.value)}
+                              className="bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-stone-800 focus:outline-none focus:border-purple-500 cursor-pointer shadow-2xs"
+                            >
+                              {barbers.map((b) => (
+                                <option key={b.id} value={b.id}>
+                                  ช่าง{b.nickname}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="relative w-32">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={item.price === 0 ? '' : item.price}
+                              onChange={(e) => handleItemChange(itemIdx, 'price', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                              placeholder="ระบุราคาสินค้า"
+                              className="w-full bg-stone-50 border border-purple-300 focus:border-purple-500 rounded-xl pl-3 pr-7 py-1.5 text-sm font-black text-right text-stone-900 focus:outline-none font-mono shadow-2xs"
+                            />
+                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(itemIdx)}
+                            className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                            title="ลบสินค้านี้"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 3.4 รายการอื่นๆ (ถ้ามี) */}
+            {otherItems.length > 0 && (
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-3.5 space-y-2">
+                <span className="text-xs font-black text-stone-800">รายการบริการอื่นๆ:</span>
+                {otherItems.map((item) => {
+                  const itemIdx = items.findIndex((it) => it.id === item.id);
+                  return (
+                    <div key={item.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={item.name}
+                          onChange={(e) => handleItemChange(itemIdx, 'name', e.target.value)}
+                          placeholder="ชื่อรายการ"
+                          className="w-full text-xs font-bold text-stone-900 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-stone-500 focus:outline-none py-1"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={item.barberId || ''}
+                          onChange={(e) => handleItemChange(itemIdx, 'barberId', e.target.value)}
+                          className="bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-stone-800 focus:outline-none cursor-pointer shadow-2xs"
+                        >
+                          {barbers.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              ช่าง{b.nickname}
+                            </option>
+                          ))}
+                        </select>
+
+                        <div className="relative w-32">
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={item.price === 0 ? '' : item.price}
+                            onChange={(e) => handleItemChange(itemIdx, 'price', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                            placeholder="ระบุราคา"
+                            className="w-full bg-stone-50 border border-stone-300 focus:border-stone-500 rounded-xl pl-3 pr-7 py-1.5 text-sm font-black text-right text-stone-900 focus:outline-none font-mono shadow-2xs"
+                          />
+                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
+                        </div>
+
+                        {items.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(itemIdx)}
+                            className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                            title="ลบรายการนี้"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* 4. TIP ADJUSTMENT */}
-          <div className="bg-pink-50/60 border border-pink-200 rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <HeartHandshake className="w-4 h-4 text-pink-600" />
+          {/* 4. TIP ADJUSTMENT (SEPARATED FROM STORE SALES) */}
+          <div className="bg-pink-50/70 border border-pink-200/90 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-pink-500 text-white font-black flex items-center justify-center shadow-xs">
+                <Heart className="w-4 h-4 stroke-[2.5]" />
+              </div>
               <div>
-                <span className="text-xs font-bold text-pink-950 block">ทิปช่าง (Tip)</span>
-                <span className="text-[10px] text-pink-700">ทิปจะถูกรวมและแจกแจงให้ช่างผู้ได้รับ</span>
+                <span className="text-xs font-black text-pink-950 block">ค่าทิปช่าง (Barber Tip)</span>
+                <span className="text-[11px] text-pink-700 font-medium">
+                  * ทิปมอบให้ช่างโดยตรง ไม่รวมกับยอดขายของร้าน
+                </span>
               </div>
             </div>
 
@@ -476,23 +816,23 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
               <select
                 value={tipBarberId}
                 onChange={(e) => setTipBarberId(e.target.value)}
-                className="bg-white border border-pink-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-stone-800 focus:outline-none focus:border-pink-500 cursor-pointer"
+                className="bg-white border border-pink-300 rounded-xl px-3 py-2 text-xs font-bold text-stone-800 focus:outline-none focus:border-pink-500 cursor-pointer shadow-2xs"
               >
                 {barbers.map((b) => (
                   <option key={b.id} value={b.id}>
-                    ให้ช่าง{b.nickname}
+                    มอบให้ช่าง{b.nickname}
                   </option>
                 ))}
               </select>
 
-              <div className="relative w-28">
+              <div className="relative w-32">
                 <input
                   type="number"
                   min="0"
-                  value={tipAmount}
-                  onChange={(e) => setTipAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                  placeholder="0"
-                  className="w-full bg-white border border-pink-300 rounded-xl px-3 py-1.5 text-xs font-black text-right text-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  value={tipAmount === 0 ? '' : tipAmount}
+                  onChange={(e) => setTipAmount(e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0))}
+                  placeholder="ระบุยอดทิป"
+                  className="w-full bg-white border border-pink-300 rounded-xl pl-3 pr-7 py-2 text-xs sm:text-sm font-black text-right text-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-400 font-mono shadow-2xs"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
               </div>
@@ -516,13 +856,30 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
 
         {/* Footer Summary & Save */}
         <div className="p-4 sm:p-5 border-t border-stone-200 bg-stone-50 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div>
-              <span className="text-[10px] text-stone-500 uppercase font-bold block">ยอดสุทธิหลังแก้ไข</span>
+              <span className="text-[10px] text-stone-500 uppercase font-bold block">ยอดขายร้าน (ไม่รวมทิป)</span>
+              <strong className="text-base font-black text-stone-900 font-mono">
+                {formatCurrency(storeSales)}
+              </strong>
+            </div>
+
+            {tipAmount > 0 && (
+              <div>
+                <span className="text-[10px] text-pink-600 uppercase font-bold block">ทิปช่าง</span>
+                <strong className="text-base font-black text-pink-700 font-mono">
+                  +{formatCurrency(tipAmount)}
+                </strong>
+              </div>
+            )}
+
+            <div className="border-l border-stone-300 pl-3">
+              <span className="text-[10px] text-amber-800 uppercase font-extrabold block">ยอดรับชำระทั้งหมด</span>
               <strong className="text-xl font-black text-amber-950 font-mono">
                 {formatCurrency(grandTotal)}
               </strong>
             </div>
+
             {totalDiscount > 0 && (
               <span className="text-[10px] text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md font-bold">
                 ส่วนลด -{formatCurrency(totalDiscount)}
@@ -534,16 +891,16 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-none px-4 py-2 rounded-xl border border-stone-200 bg-white text-stone-700 text-xs font-bold hover:bg-stone-100 transition cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-700 text-xs font-bold hover:bg-stone-100 transition cursor-pointer"
             >
               ยกเลิก
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="flex-1 sm:flex-none px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
+              className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-amber-300 text-xs font-black flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer active:scale-95"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-4 h-4 text-amber-400" />
               <span>บันทึกการแก้ไข</span>
             </button>
           </div>

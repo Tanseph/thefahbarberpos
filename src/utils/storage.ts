@@ -435,7 +435,13 @@ export const storage = {
   getBills(email?: string): Bill[] {
     const key = getStoreKey('bills', email);
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : [];
+    const list: Bill[] = raw ? JSON.parse(raw) : [];
+    return list.sort((a, b) => {
+      const timeA = new Date(a.date).getTime();
+      const timeB = new Date(b.date).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return (a.billNumber || '').localeCompare(b.billNumber || '');
+    });
   },
   saveBills(bills: Bill[], email?: string) {
     const key = getStoreKey('bills', email);

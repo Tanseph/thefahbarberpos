@@ -26,7 +26,6 @@ interface HeaderProps {
   onSelectStaff?: (staffId: string) => void;
   onRequestPinLock?: () => void;
   isAuthenticatedAdmin?: boolean;
-  todaySalesTotal?: number;
   isCloudConnected?: boolean;
   currentAccountEmail?: string | null;
   onSwitchAccount?: () => void;
@@ -39,7 +38,6 @@ export const Header: React.FC<HeaderProps> = ({
   settings,
   onRequestPinLock,
   isAuthenticatedAdmin = false,
-  todaySalesTotal = 0,
   isCloudConnected = true,
   currentAccountEmail,
   onSwitchAccount,
@@ -167,49 +165,6 @@ export const Header: React.FC<HeaderProps> = ({
               {formatThaiDate(currentTime, false)} • {currentTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
-
-          {/* Today Total */}
-          <div 
-            id="header-today-total"
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-xs font-bold shadow-2xs"
-          >
-            <span className="text-emerald-700">☀️ ยอดวันนี้:</span>
-            <span className="font-extrabold font-mono">฿{todaySalesTotal.toLocaleString()}</span>
-          </div>
-
-          {/* Account Store Badge & Log out */}
-          {currentAccountEmail && (
-            <div 
-              id="header-account-badge"
-              className="flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full border shadow-2xs transition-colors"
-              style={{
-                backgroundColor: isBrandHeader ? 'rgba(255, 255, 255, 0.2)' : 'rgba(245, 245, 244, 0.9)',
-                borderColor: 'var(--header-border)',
-              }}
-            >
-              <div className="flex items-center gap-1 text-stone-700">
-                <span className="text-stone-400 text-xs">👤</span>
-                <span 
-                  className="truncate max-w-[120px] sm:max-w-[160px] text-xs font-extrabold"
-                  style={{
-                    color: isBrandHeader ? 'var(--header-text)' : '#1c1917',
-                  }}
-                  title={currentAccountEmail}
-                >
-                  {currentAccountEmail}
-                </span>
-              </div>
-              <button
-                id="header-logout-button"
-                onClick={onLogout || onSwitchAccount}
-                className="flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-rose-50 active:scale-95 text-rose-600 hover:text-rose-700 rounded-full border border-stone-200 hover:border-rose-300 transition cursor-pointer text-xs font-black shadow-2xs"
-                title="คลิกเพื่อลงชื่อออก (Log out)"
-              >
-                <LogOut className="w-3.5 h-3.5 text-rose-500" />
-                <span>ลงชื่อออก</span>
-              </button>
-            </div>
-          )}
 
           {/* PIN Lock / Admin Status */}
           {isAuthenticatedAdmin ? (

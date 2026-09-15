@@ -706,9 +706,9 @@ export const MembersView: React.FC<MembersViewProps> = ({
                     type="number"
                     min="0"
                     step="1"
-                    value={editingMember.balance ?? 0}
-                    onChange={(e) => setEditingMember({ ...editingMember, balance: parseFloat(e.target.value) || 0 })}
-                    placeholder="0"
+                    value={editingMember.balance === 0 ? '' : (editingMember.balance ?? '')}
+                    onChange={(e) => setEditingMember({ ...editingMember, balance: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                    placeholder="ระบุจำนวนเงินคงเหลือ"
                     className="w-full bg-emerald-50 border border-emerald-300 focus:border-emerald-500 rounded-xl px-3 py-2 text-xs font-black font-mono text-emerald-950 focus:outline-none"
                   />
                 </div>

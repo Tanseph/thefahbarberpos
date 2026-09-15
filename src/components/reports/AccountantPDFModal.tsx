@@ -74,15 +74,23 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
   let tipsTotal = 0;
 
   targetBills.forEach((bill) => {
+    const billTip = bill.tipAmount || 0;
+    const billStoreSales = Math.max(0, bill.grandTotal - billTip);
+
     if (bill.paymentMethod === 'CASH') {
-      totalCash += bill.grandTotal;
+      totalCash += billStoreSales;
     } else if (bill.paymentMethod === 'TRANSFER' || bill.paymentMethod === 'PROMPTPAY' || bill.paymentMethod === 'CREDIT_CARD') {
-      totalTransfer += bill.grandTotal;
+      totalTransfer += billStoreSales;
     } else if (bill.paymentMethod === 'SPLIT') {
-      totalCash += bill.splitCashAmount || 0;
-      totalTransfer += bill.splitTransferAmount || 0;
+      const c = bill.splitCashAmount || 0;
+      const t = bill.splitTransferAmount || 0;
+      if (bill.grandTotal > 0) {
+        const ratio = billStoreSales / bill.grandTotal;
+        totalCash += c * ratio;
+        totalTransfer += t * ratio;
+      }
     } else if (bill.paymentMethod === 'MEMBER') {
-      totalTransfer += bill.grandTotal;
+      totalTransfer += billStoreSales;
     }
 
     if (bill.tipAmount) tipsTotal += bill.tipAmount;
@@ -101,7 +109,7 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
     });
   });
 
-  const grossRevenue = totalCash + totalTransfer;
+  const grossRevenue = haircutSales + chemicalSales + productSales;
   const totalExpensesAmount = targetExpenses.reduce((s, e) => s + e.amount, 0);
   const netIncome = grossRevenue - totalExpensesAmount;
 
@@ -550,14 +558,14 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
                       <td className="p-2 text-stone-700">🧴 ค่าขายสินค้าปลีก/ทรีตเมนต์ (Products)</td>
                       <td className="p-2 text-right font-mono font-bold text-stone-900">{formatCurrency(productSales)}</td>
                     </tr>
-                    <tr className="hover:bg-stone-50">
-                      <td className="p-2 text-stone-700">💖 เงินทิปพนักงาน (Tips Collected)</td>
-                      <td className="p-2 text-right font-mono font-bold text-pink-600">{formatCurrency(tipsTotal)}</td>
+                    <tr className="hover:bg-stone-50 bg-pink-50/20">
+                      <td className="p-2 text-pink-900">💖 เงินทิปพนักงาน (Tips มอบให้ช่าง ไม่รวมยอดขายร้าน)</td>
+                      <td className="p-2 text-right font-mono font-bold text-pink-600">+{formatCurrency(tipsTotal)}</td>
                     </tr>
                   </tbody>
                   <tfoot className="bg-amber-50/70 border-t border-amber-200 font-bold font-mono">
                     <tr>
-                      <td className="p-2 text-amber-950 font-sans font-black">รวมยอดขายและบริการทั้งหมด</td>
+                      <td className="p-2 text-amber-950 font-sans font-black">รวมยอดขายของร้าน (Store Sales)</td>
                       <td className="p-2 text-right text-amber-950 font-black text-xs">{formatCurrency(grossRevenue)}</td>
                     </tr>
                   </tfoot>
@@ -700,7 +708,7 @@ export const AccountantPDFModal: React.FC<AccountantPDFModalProps> = ({
                   <span>6. สมุดรายวันรับ-จ่ายตลอดทั้งเดือน (Monthly Daily Journal Ledger)</span>
                   <span className="text-[10px] text-stone-500 font-mono">วันที่ 1 ถึง {daysInMonth} {formatThaiMonthYear(selectedMonth)}</span>
                 </div>
-                <div className="max-h-[360px] overflow-y-auto">
+                <div>
                   <table className="w-full text-[10px] border-collapse font-mono">
                     <thead className="sticky top-0 bg-stone-50 text-stone-700 font-bold border-b border-stone-200">
                       <tr>

@@ -20,7 +20,11 @@ import {
   Sparkles,
   Check,
   Palette,
-  Paintbrush
+  Paintbrush,
+  Mail,
+  LogOut,
+  RefreshCw,
+  Cloud
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
@@ -37,6 +41,9 @@ interface SettingsViewProps {
   onSaveService: (service: ServiceItem) => void;
   onDeleteService: (serviceId: string) => void;
   onResetFactoryData: () => void;
+  currentAccountEmail?: string | null;
+  onSwitchAccount?: () => void;
+  onLogout?: () => void;
 }
 
 interface ToastMessage {
@@ -56,6 +63,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onSaveService,
   onDeleteService,
   onResetFactoryData,
+  currentAccountEmail,
+  onSwitchAccount,
+  onLogout,
 }) => {
   const [activeTab, setActiveTab] = useState<'STORE' | 'BARBERS' | 'SERVICES' | 'SYSTEM'>('STORE');
 
@@ -400,7 +410,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             { id: 'STORE', label: '💈 ข้อมูลร้าน & โลโก้', icon: <Store className="w-3.5 h-3.5" /> },
             { id: 'BARBERS', label: '✂️ ช่าง & คอมมิชชั่นรวม', icon: <Users className="w-3.5 h-3.5" /> },
             { id: 'SERVICES', label: '🏷️ เมนูบริการ & สต็อก', icon: <Scissors className="w-3.5 h-3.5" /> },
-            { id: 'SYSTEM', label: '🔒 รหัส PIN & รีเซ็ต', icon: <Shield className="w-3.5 h-3.5" /> },
+            { id: 'SYSTEM', label: '🔒 บัญชี & รหัส PIN', icon: <Shield className="w-3.5 h-3.5" /> },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -532,7 +542,60 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </p>
           </div>
 
-          {/* 3. Brand Color Setting (ธีมสีประจำร้าน & CSS Variables) */}
+          {/* 3. Store Email & Account */}
+          <div className="space-y-3 bg-stone-50/70 border border-stone-200/80 rounded-2xl p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-black text-stone-800 uppercase tracking-wide flex items-center gap-1.5">
+                <Mail className="w-4 h-4 text-amber-600" />
+                <span>3. อีเมลบัญชีร้าน (Store Account Email)</span>
+              </label>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300/80 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Realtime Cloud Synced</span>
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-stone-300 rounded-xl p-3 shadow-2xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-100/70 text-amber-800 flex items-center justify-center font-bold shrink-0">
+                  <Mail className="w-4 h-4 text-amber-700" />
+                </div>
+                <div>
+                  <span className="font-mono text-sm font-black text-stone-900 block">
+                    {currentAccountEmail || formData.email || 'thefahbarber@gmail.com'}
+                  </span>
+                  <span className="text-[10px] text-stone-400">
+                    ข้อมูลของร้านจะถูกเชื่อมต่อและจัดเก็บบนระบบคลาวด์ตามบัญชีอีเมลนี้
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                {onSwitchAccount && (
+                  <button
+                    type="button"
+                    onClick={onSwitchAccount}
+                    className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 active:scale-95 text-stone-700 text-xs font-bold rounded-lg border border-stone-300 transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-stone-500" />
+                    <span>สลับบัญชี</span>
+                  </button>
+                )}
+                {onLogout && (
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 text-xs font-bold rounded-lg border border-rose-200 transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                    <span>ออกจากระบบ</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Brand Color Setting (ธีมสีประจำร้าน & CSS Variables) */}
           <div className="space-y-4 bg-stone-50/70 border border-stone-200/80 rounded-2xl p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-stone-200/80">
               <div className="flex items-center gap-2">
@@ -547,7 +610,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-black text-stone-900 uppercase tracking-wide flex items-center gap-1.5">
-                    <span>3. ธีมสีประจำร้าน (Brand Color & Themes)</span>
+                    <span>4. ธีมสีประจำร้าน (Brand Color & Themes)</span>
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   </label>
                   <p className="text-[11px] text-stone-500">
@@ -874,13 +937,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     type="number"
                     min="0"
                     max="100"
-                    value={formData.haircutCommissionRate ?? 50}
+                    value={formData.haircutCommissionRate !== undefined && formData.haircutCommissionRate !== null && formData.haircutCommissionRate !== 0 ? formData.haircutCommissionRate : ''}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        haircutCommissionRate: parseFloat(e.target.value) || 0,
+                        haircutCommissionRate: e.target.value === '' ? undefined : (parseFloat(e.target.value) || 0),
                       })
                     }
+                    placeholder="ระบุ เช่น 50"
                     className="w-full bg-amber-50/50 border border-amber-300 focus:border-amber-500 rounded-xl px-3 py-2 text-base font-black text-stone-900 font-mono focus:outline-none"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-amber-700">
@@ -888,7 +952,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </span>
                 </div>
                 <span className="text-[11px] text-stone-500 block">
-                  ตัวอย่าง: ตัด 350฿ ได้ค่าคอม {Math.round(350 * ((formData.haircutCommissionRate ?? 50) / 100))}฿
+                  ตัวอย่าง: ตัด 350฿ ได้ค่าคอม {Math.round(350 * ((formData.haircutCommissionRate || 0) / 100))}฿
                 </span>
               </div>
 
@@ -906,13 +970,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     type="number"
                     min="0"
                     max="100"
-                    value={formData.chemicalCommissionRate ?? 40}
+                    value={formData.chemicalCommissionRate !== undefined && formData.chemicalCommissionRate !== null && formData.chemicalCommissionRate !== 0 ? formData.chemicalCommissionRate : ''}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        chemicalCommissionRate: parseFloat(e.target.value) || 0,
+                        chemicalCommissionRate: e.target.value === '' ? undefined : (parseFloat(e.target.value) || 0),
                       })
                     }
+                    placeholder="ระบุ เช่น 40"
                     className="w-full bg-amber-50/50 border border-amber-300 focus:border-amber-500 rounded-xl px-3 py-2 text-base font-black text-stone-900 font-mono focus:outline-none"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-amber-700">
@@ -920,7 +985,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </span>
                 </div>
                 <span className="text-[11px] text-stone-500 block">
-                  ตัวอย่าง: ดัด 1,500฿ ได้ค่าคอม {Math.round(1500 * ((formData.chemicalCommissionRate ?? 40) / 100))}฿
+                  ตัวอย่าง: ดัด 1,500฿ ได้ค่าคอม {Math.round(1500 * ((formData.chemicalCommissionRate || 0) / 100))}฿
                 </span>
               </div>
 
@@ -938,13 +1003,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     type="number"
                     min="0"
                     max="100"
-                    value={formData.productCommissionRate ?? 10}
+                    value={formData.productCommissionRate !== undefined && formData.productCommissionRate !== null && formData.productCommissionRate !== 0 ? formData.productCommissionRate : ''}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        productCommissionRate: parseFloat(e.target.value) || 0,
+                        productCommissionRate: e.target.value === '' ? undefined : (parseFloat(e.target.value) || 0),
                       })
                     }
+                    placeholder="ระบุ เช่น 10"
                     className="w-full bg-amber-50/50 border border-amber-300 focus:border-amber-500 rounded-xl px-3 py-2 text-base font-black text-stone-900 font-mono focus:outline-none"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-amber-700">
@@ -952,7 +1018,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </span>
                 </div>
                 <span className="text-[11px] text-stone-500 block">
-                  ตัวอย่าง: ขายแว็กซ์ 350฿ ได้ค่าคอม {Math.round(350 * ((formData.productCommissionRate ?? 10) / 100))}฿
+                  ตัวอย่าง: ขายแว็กซ์ 350฿ ได้ค่าคอม {Math.round(350 * ((formData.productCommissionRate || 0) / 100))}฿
                 </span>
               </div>
             </div>
@@ -1123,15 +1189,75 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </motion.div>
       )}
 
-      {/* TAB 4: SYSTEM PIN & FACTORY RESET */}
+      {/* TAB 4: ACCOUNT, SYSTEM PIN & FACTORY RESET */}
       {activeTab === 'SYSTEM' && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white border border-stone-200 rounded-3xl p-6 shadow-xs space-y-6 max-w-2xl"
         >
+          {/* Cloud Account & User Profile */}
+          <div className="space-y-4 bg-stone-50 border border-stone-200/90 rounded-2xl p-5 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-200">
+              <div className="flex items-center gap-2.5 text-stone-900">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold shrink-0">
+                  <Mail className="w-4 h-4 text-amber-700" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-stone-900 flex items-center gap-1.5">
+                    <span>บัญชีผู้ใช้งาน & ระบบคลาวด์</span>
+                    <span className="text-xs font-normal text-stone-400">(Account & Cloud Sync)</span>
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    บัญชีที่ใช้เชื่อมต่อและจัดเก็บข้อมูลบิลขาย ข้อมูลช่าง และสมาชิกบนคลาวด์
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300/80 shadow-2xs self-start sm:self-auto">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Realtime Cloud Synced</span>
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-stone-600 block">อีเมลบัญชีร้านปัจจุบัน:</span>
+                <div className="inline-flex items-center gap-2">
+                  <span className="font-mono text-sm font-black text-stone-900 bg-white border border-stone-300 rounded-xl px-3.5 py-1.5 shadow-2xs">
+                    {currentAccountEmail || 'thefahbarber@gmail.com'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap pt-1 sm:pt-0">
+                {onSwitchAccount && (
+                  <button
+                    type="button"
+                    onClick={onSwitchAccount}
+                    className="px-3.5 py-2 bg-white hover:bg-stone-100 active:scale-95 text-stone-800 text-xs font-bold rounded-xl border border-stone-300 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                    title="สลับเข้าใช้งานด้วยบัญชีอีเมลอื่น"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-stone-500" />
+                    <span>สลับบัญชี</span>
+                  </button>
+                )}
+                {onLogout && (
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                    title="ลงชื่อออกจากบัญชีนี้"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                    <span>ลงชื่อออก</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Admin PIN Configuration */}
-          <div className="space-y-3">
+          <div className="space-y-3 pt-2">
             <h3 className="font-black text-stone-900 text-sm flex items-center gap-2 pb-2 border-b border-stone-100">
               <KeyRound className="w-4 h-4 text-amber-700" />
               <span>รหัส PIN สำหรับความปลอดภัยของเจ้าของร้าน</span>
@@ -1384,7 +1510,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     type="number"
                     min="0"
                     required
-                    value={editingService.price !== undefined ? editingService.price : ''}
+                    value={editingService.price !== undefined && editingService.price !== null && editingService.price !== 0 ? editingService.price : ''}
                     onChange={(e) => setEditingService({ ...editingService, price: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
                     placeholder="เช่น 350"
                     className="w-full bg-stone-50 border border-stone-300 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-amber-900 font-mono font-bold"
@@ -1398,8 +1524,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <input
                     type="number"
                     min="0"
-                    value={editingService.stock || 0}
-                    onChange={(e) => setEditingService({ ...editingService, stock: parseInt(e.target.value, 10) || 0 })}
+                    value={editingService.stock !== undefined && editingService.stock !== null && editingService.stock !== 0 ? editingService.stock : ''}
+                    onChange={(e) => setEditingService({ ...editingService, stock: e.target.value === '' ? undefined : parseInt(e.target.value, 10) || 0 })}
+                    placeholder="ระบุจำนวนสต็อก"
                     className="w-full bg-stone-50 border border-stone-300 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-stone-900 font-mono font-bold"
                   />
                 </div>
@@ -1410,8 +1537,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     type="number"
                     min="5"
                     step="5"
-                    value={editingService.durationMinutes || 30}
-                    onChange={(e) => setEditingService({ ...editingService, durationMinutes: parseInt(e.target.value, 10) || 30 })}
+                    value={editingService.durationMinutes !== undefined && editingService.durationMinutes !== null && editingService.durationMinutes !== 0 ? editingService.durationMinutes : ''}
+                    onChange={(e) => setEditingService({ ...editingService, durationMinutes: e.target.value === '' ? undefined : parseInt(e.target.value, 10) || 0 })}
+                    placeholder="ระบุนาที เช่น 30"
                     className="w-full bg-stone-50 border border-stone-300 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-stone-900 font-mono"
                   />
                 </div>

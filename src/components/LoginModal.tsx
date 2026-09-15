@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Store, ArrowRight, ShieldCheck, Sparkles, Building2, Check, X, LogIn } from 'lucide-react';
-import { storage } from '../utils/storage';
+import { Mail, ArrowRight, ShieldCheck, X, LogIn, CheckCircle2 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -9,6 +9,53 @@ interface LoginModalProps {
   onClose?: () => void;
   canClose?: boolean;
 }
+
+// Sound synthesizer for button click feedback (audio effect)
+const playButtonSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+
+    // Harmonic bell chime tone 1 (Primary)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(523.25, now); // C5
+    osc1.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
+
+    gain1.gain.setValueAtTime(0.3, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+
+    osc1.start(now);
+    osc1.stop(now + 0.3);
+
+    // Harmonic overtone 2 (Crisp spark)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(1046.5, now + 0.04); // C6
+    gain2.gain.setValueAtTime(0.18, now + 0.04);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+
+    osc2.start(now + 0.04);
+    osc2.stop(now + 0.32);
+
+    // Vibration tactile feedback on supported mobile devices
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([20, 30, 20]);
+    }
+  } catch {
+    // AudioContext blocked or not supported, fail gracefully
+  }
+};
 
 export const LoginModal: React.FC<LoginModalProps> = ({
   isOpen,
@@ -19,17 +66,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 }) => {
   const [emailInput, setEmailInput] = useState(currentEmail || '');
   const [errorMsg, setErrorMsg] = useState('');
-  const savedAccounts = storage.getSavedAccounts();
+  const [isPressed, setIsPressed] = useState(false);
 
   useEffect(() => {
     setEmailInput(currentEmail || '');
     setErrorMsg('');
+    setIsPressed(false);
   }, [currentEmail, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPressed) return;
+
     const trimmed = emailInput.trim().toLowerCase();
     if (!trimmed) {
       setErrorMsg('กรุณากรอกอีเมลของร้าน');
@@ -42,12 +92,27 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
 
     setErrorMsg('');
-    onLogin(trimmed);
-  };
 
-  const handleSelectSaved = (saved: string) => {
-    setEmailInput(saved);
-    onLogin(saved);
+    // 1. Play sound effect
+    playButtonSound();
+
+    // 2. Trigger visual press effects & particle burst
+    setIsPressed(true);
+    try {
+      confetti({
+        particleCount: 35,
+        spread: 60,
+        origin: { y: 0.65 },
+        colors: ['#f59e0b', '#10b981', '#fbbf24', '#d97706', '#3b82f6'],
+      });
+    } catch {
+      // ignore
+    }
+
+    // 3. Complete login transition after visual feedback
+    setTimeout(() => {
+      onLogin(trimmed);
+    }, 320);
   };
 
   return (
@@ -101,6 +166,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 placeholder="กรุณาระบุ Email ของท่าน"
                 className="w-full pl-10 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl text-sm font-semibold text-stone-900 placeholder:text-stone-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition"
                 autoFocus
+                disabled={isPressed}
               />
             </div>
             {errorMsg && (
@@ -112,59 +178,35 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
           <button
             type="submit"
-            className="w-full py-3 px-4 bg-amber-600 hover:bg-amber-700 active:scale-98 text-white rounded-2xl font-black text-sm transition-all shadow-md shadow-amber-600/20 flex items-center justify-center gap-2 cursor-pointer"
+            disabled={isPressed}
+            className={`relative w-full py-3.5 px-4 rounded-2xl font-black text-sm transition-all duration-200 shadow-md flex items-center justify-center gap-2 cursor-pointer overflow-hidden ${
+              isPressed
+                ? 'bg-emerald-600 text-white scale-98 shadow-emerald-600/30 ring-4 ring-emerald-400/40'
+                : 'bg-amber-600 hover:bg-amber-700 active:scale-95 text-white shadow-amber-600/25 hover:shadow-lg hover:shadow-amber-600/35 ring-0 active:ring-4 active:ring-amber-300'
+            }`}
           >
-            <LogIn className="w-4 h-4" />
-            เข้าสู่ระบบร้านนี้
-            <ArrowRight className="w-4 h-4" />
+            {/* Pulsing ring animation when clicked */}
+            {isPressed && (
+              <span className="absolute inset-0 rounded-2xl bg-white/30 animate-ping pointer-events-none" />
+            )}
+
+            {isPressed ? (
+              <span className="flex items-center gap-2 text-white animate-in zoom-in-95 duration-150">
+                <CheckCircle2 className="w-5 h-5 text-white animate-bounce" />
+                <span>เข้าสู่ระบบสำเร็จ! กำลังโหลด...</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <LogIn className="w-4 h-4" />
+                <span>เข้าสู่ระบบร้านนี้</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+              </span>
+            )}
           </button>
         </form>
 
-        {/* Saved Accounts Switcher */}
-        {savedAccounts.length > 0 && (
-          <div className="mt-6 pt-5 border-t border-stone-100 space-y-2.5">
-            <div className="flex items-center justify-between text-xs text-stone-500">
-              <span className="font-bold flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-stone-400" />
-                ร้านที่เคยเข้าสู่ระบบในเครื่องนี้:
-              </span>
-            </div>
-            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-              {savedAccounts.map((acc) => {
-                const isCurrent = acc === currentEmail;
-                return (
-                  <button
-                    key={acc}
-                    type="button"
-                    onClick={() => handleSelectSaved(acc)}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs font-bold transition text-left cursor-pointer ${
-                      isCurrent
-                        ? 'bg-amber-50/70 border-amber-300 text-amber-900 shadow-2xs'
-                        : 'bg-stone-50 hover:bg-stone-100 border-stone-200/80 text-stone-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="text-base">🏪</span>
-                      <span className="truncate">{acc}</span>
-                    </div>
-                    {isCurrent ? (
-                      <span className="flex items-center gap-1 text-[11px] font-black text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-md shrink-0">
-                        <Check className="w-3 h-3" /> ร้านปัจจุบัน
-                      </span>
-                    ) : (
-                      <span className="text-[11px] text-stone-400 shrink-0 hover:text-stone-700">
-                        สลับมาร้านนี้ →
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Info Footer */}
-        <div className="mt-4 pt-3 text-center">
+        <div className="mt-5 pt-3 text-center border-t border-stone-100">
           <p className="text-[11px] text-stone-400 flex items-center justify-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             ระบบคลาวด์ Realtime ซิงค์ข้อมูลข้ามเครื่องอัตโนมัติตามอีเมลร้าน

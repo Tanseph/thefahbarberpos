@@ -89,16 +89,23 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
 
   if (!isOpen) return null;
 
-  const filteredBills = bills.filter((b) => {
-    if (filter !== 'ALL' && b.status !== filter) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      b.billNumber.toLowerCase().includes(q) ||
-      (b.memberName && b.memberName.toLowerCase().includes(q)) ||
-      (b.memberPhone && b.memberPhone.includes(q))
-    );
-  });
+  const filteredBills = bills
+    .filter((b) => {
+      if (filter !== 'ALL' && b.status !== filter) return false;
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        b.billNumber.toLowerCase().includes(q) ||
+        (b.memberName && b.memberName.toLowerCase().includes(q)) ||
+        (b.memberPhone && b.memberPhone.includes(q))
+      );
+    })
+    .sort((a, b) => {
+      const timeA = new Date(a.date).getTime();
+      const timeB = new Date(b.date).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return (a.billNumber || '').localeCompare(b.billNumber || '');
+    });
 
   const handlePrint = (bill: Bill) => {
     if (onSelectBillForReceipt) {

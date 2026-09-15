@@ -261,7 +261,7 @@ export default function App() {
   };
 
   const handleAddBill = (newBill: Bill) => {
-    setBills((prev) => [newBill, ...prev]);
+    setBills((prev) => [...prev, newBill]);
     if (accountEmail) {
       saveBillToFirestore(accountEmail, newBill);
     }
@@ -541,7 +541,6 @@ export default function App() {
         currentAccountEmail={accountEmail}
         onSwitchAccount={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
-        todaySalesTotal={bills.filter(b => b.status === 'COMPLETED' && b.date?.startsWith(new Date().toISOString().slice(0, 10))).reduce((sum, b) => sum + (b.grandTotal || 0), 0)}
       />
 
       {/* Main Content Area */}
@@ -639,6 +638,9 @@ export default function App() {
             onSaveService={handleSaveService}
             onDeleteService={handleDeleteService}
             onResetFactoryData={handleResetFactoryData}
+            currentAccountEmail={accountEmail}
+            onSwitchAccount={() => setIsLoginModalOpen(true)}
+            onLogout={handleLogout}
           />
         )}
       </main>
@@ -650,7 +652,7 @@ export default function App() {
           <span>•</span>
           <span className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Cloud Realtime Synced ({accountEmail})
+            Cloud Realtime Synced
           </span>
         </div>
         <div className="flex items-center gap-4">
