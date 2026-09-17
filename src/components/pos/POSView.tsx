@@ -818,27 +818,27 @@ export const POSView: React.FC<POSViewProps> = ({
         </div>
 
         {/* SECTION 3: NUMERIC SERVICE FEES (ค่าตัดผม, ค่าเคมี, ค่าทิป) */}
-        <div className="bg-white border border-stone-200/80 rounded-xl p-3.5 shadow-2xs space-y-2.5">
+        <div className="bg-white border border-stone-200/80 rounded-xl p-2.5 sm:p-3 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+            <h2 className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider flex items-center gap-1">
               <span>💰</span>
-              <span>3. กรอกราคาค่าบริการ & ค่าทิป</span>
+              <span>3. ค่าบริการ & ค่าทิป</span>
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {/* 3.1 ช่องกรอกราคาค่าตัดผม */}
-            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-amber-300 rounded-xl p-2.5 space-y-1 transition">
-              <label className="text-[11px] font-bold text-stone-700 flex items-center justify-between">
+            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-amber-300 rounded-lg p-2 space-y-1 transition">
+              <label className="text-[10px] font-medium text-stone-600 flex items-center justify-between">
                 <span className="flex items-center gap-1">
-                  <Scissors className="w-3 h-3 text-stone-500" />
+                  <Scissors className="w-3 h-3 text-stone-400" />
                   <span>ค่าตัดผม</span>
                 </span>
-                <span className="text-[10px] text-stone-400">บาท (฿)</span>
+                <span className="text-[9px] text-stone-400">บาท (฿)</span>
               </label>
 
               <div className="relative">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-normal text-stone-400">
                   ฿
                 </span>
                 <input
@@ -847,24 +847,24 @@ export const POSView: React.FC<POSViewProps> = ({
                   step="1"
                   value={haircutFeeInput}
                   onChange={(e) => setHaircutFeeInput(e.target.value)}
-                  placeholder="ระบุราคาตัดผม"
-                  className="w-full bg-white border border-stone-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-100 rounded-lg pl-6 pr-2.5 py-1.5 text-sm font-black text-stone-800 focus:outline-none font-mono"
+                  placeholder="0"
+                  className="w-full bg-white border border-stone-200 focus:border-amber-400 focus:ring-1 focus:ring-amber-200 rounded-md pl-5 pr-2 py-1 text-xs font-normal text-stone-800 placeholder:text-stone-300 placeholder:font-normal focus:outline-none font-sans"
                 />
               </div>
             </div>
 
             {/* 3.2 ช่องกรอกราคาค่าเคมี */}
-            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-cyan-300 rounded-xl p-2.5 space-y-1 transition">
-              <label className="text-[11px] font-bold text-stone-700 flex items-center justify-between">
+            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-cyan-300 rounded-lg p-2 space-y-1 transition">
+              <label className="text-[10px] font-medium text-stone-600 flex items-center justify-between">
                 <span className="flex items-center gap-1">
                   <FlaskConical className="w-3 h-3 text-cyan-600" />
                   <span>ค่าเคมี</span>
                 </span>
-                <span className="text-[10px] text-stone-400">บาท (฿)</span>
+                <span className="text-[9px] text-stone-400">บาท (฿)</span>
               </label>
 
               <div className="relative">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-normal text-stone-400">
                   ฿
                 </span>
                 <input
@@ -873,24 +873,24 @@ export const POSView: React.FC<POSViewProps> = ({
                   step="1"
                   value={chemicalFeeInput}
                   onChange={(e) => setChemicalFeeInput(e.target.value)}
-                  placeholder="ระบุราคาเคมี"
-                  className="w-full bg-white border border-stone-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 rounded-lg pl-6 pr-2.5 py-1.5 text-sm font-black text-stone-800 focus:outline-none font-mono"
+                  placeholder="0"
+                  className="w-full bg-white border border-stone-200 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-200 rounded-md pl-5 pr-2 py-1 text-xs font-normal text-stone-800 placeholder:text-stone-300 placeholder:font-normal focus:outline-none font-sans"
                 />
               </div>
             </div>
 
             {/* 3.3 ช่องกรอกราคาค่าทิป */}
-            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-pink-300 rounded-xl p-2.5 space-y-1 transition">
-              <label className="text-[11px] font-bold text-stone-700 flex items-center justify-between">
+            <div className="bg-stone-50/70 border border-stone-200/70 hover:border-pink-300 rounded-lg p-2 space-y-1 transition">
+              <label className="text-[10px] font-medium text-stone-600 flex items-center justify-between">
                 <span className="flex items-center gap-1">
                   <Heart className="w-3 h-3 text-pink-500" />
                   <span>ค่าทิปช่าง</span>
                 </span>
-                <span className="text-[9px] text-pink-700 font-bold">ไม่รวมยอดร้าน</span>
+                <span className="text-[9px] text-pink-700 font-normal">ไม่รวมยอดร้าน</span>
               </label>
 
               <div className="relative">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-normal text-stone-400">
                   ฿
                 </span>
                 <input
@@ -899,8 +899,8 @@ export const POSView: React.FC<POSViewProps> = ({
                   step="1"
                   value={tipAmountInput}
                   onChange={(e) => setTipAmountInput(e.target.value)}
-                  placeholder="ระบุยอดทิป"
-                  className="w-full bg-white border border-stone-200 focus:border-pink-400 focus:ring-2 focus:ring-pink-100 rounded-lg pl-6 pr-2.5 py-1.5 text-sm font-black text-stone-800 focus:outline-none font-mono"
+                  placeholder="0"
+                  className="w-full bg-white border border-stone-200 focus:border-pink-400 focus:ring-1 focus:ring-pink-200 rounded-md pl-5 pr-2 py-1 text-xs font-normal text-stone-800 placeholder:text-stone-300 placeholder:font-normal focus:outline-none font-sans"
                 />
               </div>
             </div>
@@ -1128,22 +1128,22 @@ export const POSView: React.FC<POSViewProps> = ({
           </div>
 
           {/* Breakdown calculation */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
-            <div className="bg-stone-50 p-2 rounded-lg border border-stone-200/60">
-              <span className="text-stone-400 block text-[10px]">ค่าตัดผม:</span>
-              <strong className="text-stone-800 font-bold">{formatCurrency(haircutFee)}</strong>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
+            <div className="bg-stone-50/80 p-1.5 rounded-lg border border-stone-200/50">
+              <span className="text-stone-400 block text-[9px]">ค่าตัดผม:</span>
+              <strong className="text-stone-700 font-semibold">{formatCurrency(haircutFee)}</strong>
             </div>
-            <div className="bg-stone-50 p-2 rounded-lg border border-stone-200/60">
-              <span className="text-stone-400 block text-[10px]">ค่าเคมี:</span>
-              <strong className="text-stone-800 font-bold">{formatCurrency(chemicalFee)}</strong>
+            <div className="bg-stone-50/80 p-1.5 rounded-lg border border-stone-200/50">
+              <span className="text-stone-400 block text-[9px]">ค่าเคมี:</span>
+              <strong className="text-stone-700 font-semibold">{formatCurrency(chemicalFee)}</strong>
             </div>
-            <div className="bg-stone-50 p-2 rounded-lg border border-stone-200/60">
-              <span className="text-stone-400 block text-[10px]">ค่าสินค้า:</span>
-              <strong className="text-stone-800 font-bold">{formatCurrency(productsSubtotal)}</strong>
+            <div className="bg-stone-50/80 p-1.5 rounded-lg border border-stone-200/50">
+              <span className="text-stone-400 block text-[9px]">ค่าสินค้า:</span>
+              <strong className="text-stone-700 font-semibold">{formatCurrency(productsSubtotal)}</strong>
             </div>
-            <div className="bg-stone-50 p-2 rounded-lg border border-stone-200/60">
-              <span className="text-stone-400 block text-[10px]">ค่าทิปช่าง:</span>
-              <strong className="text-pink-600 font-bold">{formatCurrency(tipAmount)}</strong>
+            <div className="bg-stone-50/80 p-1.5 rounded-lg border border-stone-200/50">
+              <span className="text-stone-400 block text-[9px]">ค่าทิปช่าง:</span>
+              <strong className="text-pink-600 font-semibold">{formatCurrency(tipAmount)}</strong>
             </div>
           </div>
 

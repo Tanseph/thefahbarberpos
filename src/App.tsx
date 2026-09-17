@@ -52,6 +52,7 @@ import { SettingsView } from './components/settings/SettingsView';
 import { PINModal } from './components/PINModal';
 import { LoginModal } from './components/LoginModal';
 import { applyBrandTheme } from './utils/brandTheme';
+import { updateFavicon } from './utils/favicon';
 
 export default function App() {
   // Navigation active tab
@@ -174,6 +175,11 @@ export default function App() {
   useEffect(() => {
     applyBrandTheme(settings.brandColor, settings.brandHeaderStyle || 'light');
   }, [settings.brandColor, settings.brandHeaderStyle]);
+
+  // Update browser tab favicon dynamically to match the store's uploaded logo
+  useEffect(() => {
+    updateFavicon(settings.logoUrl);
+  }, [settings.logoUrl]);
 
   // Ensure active staff is valid when barbers update
   useEffect(() => {

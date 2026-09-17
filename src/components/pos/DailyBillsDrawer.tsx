@@ -89,6 +89,43 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
 
   if (!isOpen) return null;
 
+  const validBills = bills.filter((b) => b.status !== 'VOIDED');
+  const mergedTransferGroups = new Set<string>();
+  let unmergedTransferCount = 0;
+  let transferBillsCount = 0;
+  let cashBillsCount = 0;
+  let totalTransferAmount = 0;
+  let totalCashAmount = 0;
+
+  validBills.forEach((b) => {
+    const hasTransfer =
+      b.paymentMethod === 'TRANSFER' ||
+      b.paymentMethod === 'PROMPTPAY' ||
+      b.paymentMethod === 'CREDIT_CARD' ||
+      b.paymentMethod === 'MEMBER' ||
+      (b.paymentMethod === 'SPLIT' && (b.splitTransferAmount || 0) > 0);
+
+    const hasCash =
+      b.paymentMethod === 'CASH' ||
+      (b.paymentMethod === 'SPLIT' && (b.splitCashAmount || 0) > 0);
+
+    if (hasCash) {
+      cashBillsCount += 1;
+      totalCashAmount += b.paymentMethod === 'SPLIT' ? (b.splitCashAmount || 0) : b.grandTotal;
+    }
+    if (hasTransfer) {
+      transferBillsCount += 1;
+      totalTransferAmount += b.paymentMethod === 'SPLIT' ? (b.splitTransferAmount || 0) : b.grandTotal;
+      if (b.mergedGroupId) {
+        mergedTransferGroups.add(b.mergedGroupId);
+      } else {
+        unmergedTransferCount += 1;
+      }
+    }
+  });
+
+  const transferCount = mergedTransferGroups.size + unmergedTransferCount;
+
   const filteredBills = bills
     .filter((b) => {
       if (filter !== 'ALL' && b.status !== filter) return false;
@@ -157,7 +194,15 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
               </div>
               <div>
                 <h3 className="font-extrabold text-stone-900 text-sm tracking-tight">ประวัติบิลขายวันนี้</h3>
-                <span className="text-[11px] text-stone-500">ทั้งหมด {bills.length} บิล (แก้ไข/ลบ/สลับชำระได้)</span>
+                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                  <span className="text-[11px] text-stone-500">ทั้งหมด {bills.length} บิล</span>
+                  <span className="text-[10px] bg-cyan-100 text-cyan-800 font-bold px-1.5 py-0.2 rounded border border-cyan-200">
+                    📱 โอน {transferCount} ยอด ({transferBillsCount} บิล)
+                  </span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded border border-emerald-200">
+                    💵 สด {cashBillsCount} บิล
+                  </span>
+                </div>
               </div>
             </div>
             <button
@@ -313,11 +358,11 @@ export const DailyBillsDrawer: React.FC<DailyBillsDrawerProps> = ({
                   )}
 
                   {/* Items summary */}
-                  <div className="text-[11px] text-stone-600 bg-white p-2.5 rounded-xl border border-stone-200/70 space-y-0.5 mb-2.5">
+                  <div className="text-[10.5px] text-stone-600 bg-stone-50/50 p-2 rounded-lg border border-stone-200/60 space-y-0.5 mb-2">
                     {bill.items.map((i, idx) => (
                       <div key={idx} className="flex justify-between">
                         <span>{i.name} (x{i.quantity}) • ช่าง{i.barberName}</span>
-                        <span className="font-semibold text-stone-900">{formatCurrency(i.price * i.quantity)}</span>
+                        <span className="font-medium text-stone-800">{formatCurrency(i.price * i.quantity)}</span>
                       </div>
                     ))}
                     {bill.tipAmount > 0 && (

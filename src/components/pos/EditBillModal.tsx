@@ -427,8 +427,8 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                         setSplitCash(val);
                         setSplitTransfer(Math.max(0, grandTotal - val));
                       }}
-                      placeholder="ระบุยอดเงินสด"
-                      className="w-full bg-emerald-50/50 border border-emerald-300 rounded-xl pl-3 pr-7 py-2 text-sm font-black text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-400 font-mono"
+                      placeholder="0"
+                      className="w-full bg-white border border-emerald-300 rounded-xl pl-3 pr-7 py-2 text-sm font-medium text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-400 font-sans"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
                   </div>
@@ -449,8 +449,8 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                         setSplitTransfer(val);
                         setSplitCash(Math.max(0, grandTotal - val));
                       }}
-                      placeholder="ระบุยอดเงินโอน"
-                      className="w-full bg-cyan-50/50 border border-cyan-300 rounded-xl pl-3 pr-7 py-2 text-sm font-black text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-400 font-mono"
+                      placeholder="0"
+                      className="w-full bg-white border border-cyan-300 rounded-xl pl-3 pr-7 py-2 text-sm font-medium text-cyan-950 focus:outline-none focus:ring-2 focus:ring-cyan-400 font-sans"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
                   </div>
@@ -497,26 +497,26 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
           </div>
 
           {/* 3. ITEMS & SERVICES / PRODUCTS PRICING (DIRECT NUMERIC INPUTS - NO QUANTITY) */}
-          <div className="space-y-3.5">
+          <div className="space-y-3">
             <div>
-              <label className="text-xs font-black text-stone-900 flex items-center gap-1.5">
-                <Scissors className="w-4 h-4 text-amber-600" /> 
+              <label className="text-xs font-semibold text-stone-800 flex items-center gap-1.5">
+                <Scissors className="w-3.5 h-3.5 text-amber-600" /> 
                 <span>รายการค่าบริการและสินค้า:</span>
               </label>
-              <p className="text-[11px] text-stone-500">
+              <p className="text-[10px] text-stone-400">
                 กรอกตัวเลขราคาได้ทันทีในแต่ละช่อง ไม่ต้องกรอกจำนวน
               </p>
             </div>
 
             {/* 3.1 งานตัดผม (HAIRCUT) */}
-            <div className="bg-amber-50/50 border border-amber-200/80 rounded-2xl p-3.5 space-y-2.5">
+            <div className="bg-amber-50/50 border border-amber-200/80 rounded-xl p-2.5 sm:p-3 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-amber-950 flex items-center gap-1.5">
-                    <Scissors className="w-3.5 h-3.5 text-amber-600" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-amber-900 flex items-center gap-1">
+                    <Scissors className="w-3 h-3 text-amber-600" />
                     <span>ค่าตัดผม (Haircut Fee)</span>
                   </span>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 border border-amber-300">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-200/80 text-amber-900 border border-amber-300">
                     ✂️ รวม {haircutItems.length} หัว
                   </span>
                 </div>
@@ -525,7 +525,7 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                   <button
                     type="button"
                     onClick={handleAddHaircut}
-                    className="text-[11px] font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-amber-300 shadow-2xs hover:bg-amber-50 active:scale-95 transition"
+                    className="text-[10px] font-medium text-amber-800 hover:text-amber-950 flex items-center gap-1 cursor-pointer bg-white px-2 py-0.5 rounded-md border border-amber-300 shadow-2xs hover:bg-amber-50 active:scale-95 transition"
                   >
                     <Plus className="w-3 h-3" />
                     <span>+ เพิ่มหัวตัดผม</span>
@@ -534,7 +534,7 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
               </div>
 
               {haircutItems.length >= 2 && (
-                <div className="bg-purple-50/80 border border-purple-200 rounded-xl px-3 py-1.5 text-[11px] text-purple-900 flex items-center gap-2">
+                <div className="bg-purple-50/80 border border-purple-200 rounded-lg px-2.5 py-1 text-[10px] text-purple-900 flex items-center gap-1.5">
                   <span>ℹ️</span>
                   <span>
                     บิลนี้นับเป็น <strong>{haircutItems.length} หัวตัดผม</strong> (ช่างแต่ละคนจะได้รับยอดตัดผมและจำนวนหัวตามที่เลือก ยอดรวมโอนจ่ายในบิลเดียว)
@@ -543,17 +543,17 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
               )}
 
               {haircutItems.length === 0 ? (
-                <div className="text-xs text-stone-400 italic py-1">
+                <div className="text-[11px] text-stone-400 italic py-1">
                   ไม่มีรายการตัดผมในบิลนี้ (กดปุ่ม + เพิ่มหัวตัดผม เพื่อระบุราคา)
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {haircutItems.map((item, idx) => {
                     const itemIdx = items.findIndex((it) => it.id === item.id);
                     return (
-                      <div key={item.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2.5 rounded-xl border border-amber-200/70 shadow-2xs">
-                        <div className="flex items-center gap-2 flex-1">
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
+                      <div key={item.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 bg-white p-2 rounded-lg border border-amber-200/70 shadow-2xs">
+                        <div className="flex items-center gap-1.5 flex-1">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
                             หัวที่ {idx + 1}
                           </span>
                           <input
@@ -561,16 +561,16 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                             value={item.name}
                             onChange={(e) => handleItemChange(itemIdx, 'name', e.target.value)}
                             placeholder={`ระบุชื่อ เช่น ค่าตัดผม (คนที่ ${idx + 1})`}
-                            className="w-full text-xs font-bold text-stone-900 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-amber-500 focus:outline-none py-1"
+                            className="w-full text-xs font-normal text-stone-800 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-amber-500 focus:outline-none py-0.5"
                           />
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <div className="space-y-0.5">
                             <select
                               value={item.barberId || ''}
                               onChange={(e) => handleItemChange(itemIdx, 'barberId', e.target.value)}
-                              className="bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-stone-800 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
+                              className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-1 text-xs font-normal text-stone-800 focus:outline-none focus:border-amber-500 cursor-pointer shadow-2xs"
                             >
                               {barbers.map((b) => (
                                 <option key={b.id} value={b.id}>
@@ -580,27 +580,27 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                             </select>
                           </div>
 
-                          <div className="relative w-32">
+                          <div className="relative w-28">
                             <input
                               type="number"
                               min="0"
                               step="1"
                               value={item.price === 0 ? '' : item.price}
                               onChange={(e) => handleItemChange(itemIdx, 'price', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
-                              placeholder="ระบุราคา"
-                              className="w-full bg-stone-50 border border-amber-300 focus:border-amber-500 rounded-xl pl-3 pr-7 py-1.5 text-sm font-black text-right text-stone-900 focus:outline-none font-mono shadow-2xs"
+                              placeholder="0"
+                              className="w-full bg-white border border-stone-300 focus:border-amber-500 rounded-lg pl-2.5 pr-6 py-1 text-xs font-medium text-right text-stone-800 focus:outline-none font-sans shadow-2xs"
                             />
-                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-normal text-stone-400">฿</span>
                           </div>
 
-                          {items.length > 1 && (
+                          {haircutItems.length > 1 && (
                             <button
                               type="button"
                               onClick={() => handleRemoveItem(itemIdx)}
-                              className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                              className="p-1 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
                               title="ลบรายการนี้"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>
@@ -612,40 +612,40 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
             </div>
 
             {/* 3.2 งานเคมี (CHEMICAL) - เอาออกมาเป็นช่องกรอกตัวเลขเลย จำนวนไม่ต้อง */}
-            <div className="bg-cyan-50/50 border border-cyan-200/80 rounded-2xl p-3.5 space-y-2.5">
+            <div className="bg-cyan-50/50 border border-cyan-200/80 rounded-xl p-2.5 sm:p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-cyan-950 flex items-center gap-1.5">
-                  <FlaskConical className="w-3.5 h-3.5 text-cyan-600" />
+                <span className="text-xs font-semibold text-cyan-950 flex items-center gap-1">
+                  <FlaskConical className="w-3 h-3 text-cyan-600" />
                   <span>ค่าเคมี (Chemical Fee: ดัด / ยืด / ทำสี)</span>
                 </span>
                 {chemicalItem && chemicalItem.price > 0 && (
                   <button
                     type="button"
                     onClick={handleRemoveChemical}
-                    className="text-[11px] font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1 cursor-pointer bg-white px-2 py-0.5 rounded-lg border border-rose-200 shadow-2xs hover:bg-rose-50 active:scale-95"
+                    className="text-[10px] font-medium text-rose-600 hover:text-rose-800 flex items-center gap-1 cursor-pointer bg-white px-1.5 py-0.5 rounded-md border border-rose-200 shadow-2xs hover:bg-rose-50 active:scale-95"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-2.5 h-2.5" />
                     <span>ล้างค่าเคมี</span>
                   </button>
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2.5 rounded-xl border border-cyan-200/70 shadow-2xs">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 bg-white p-2 rounded-lg border border-cyan-200/70 shadow-2xs">
                 <div className="flex-1">
-                  <span className="text-xs font-bold text-stone-700 block">
+                  <span className="text-xs font-normal text-stone-700 block">
                     {chemicalItem?.name || 'ค่าเคมี (ดัด / ยืด / สี)'}
                   </span>
-                  <span className="text-[10px] text-stone-400">
+                  <span className="text-[9px] text-stone-400">
                     ช่องกรอกตัวเลขค่าเคมีโดยตรง
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <div className="space-y-0.5">
                     <select
                       value={chemicalItem?.barberId || (items[0]?.barberId || (barbers[0]?.id || ''))}
                       onChange={(e) => handleChemicalBarberChange(e.target.value)}
-                      className="bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-stone-800 focus:outline-none focus:border-cyan-500 cursor-pointer shadow-2xs"
+                      className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-1 text-xs font-normal text-stone-800 focus:outline-none focus:border-cyan-500 cursor-pointer shadow-2xs"
                     >
                       {barbers.map((b) => (
                         <option key={b.id} value={b.id}>
@@ -655,72 +655,72 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                     </select>
                   </div>
 
-                  <div className="relative w-32">
+                  <div className="relative w-28">
                     <input
                       type="number"
                       min="0"
                       step="1"
                       value={chemicalItem?.price === 0 ? '' : (chemicalItem?.price ?? '')}
                       onChange={(e) => handleChemicalPriceChange(e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
-                      placeholder="ระบุราคาเคมี"
-                      className="w-full bg-stone-50 border border-cyan-300 focus:border-cyan-500 rounded-xl pl-3 pr-7 py-1.5 text-sm font-black text-right text-stone-900 focus:outline-none font-mono shadow-2xs"
+                      placeholder="0"
+                      className="w-full bg-white border border-stone-300 focus:border-cyan-500 rounded-lg pl-2.5 pr-6 py-1 text-xs font-medium text-right text-stone-800 focus:outline-none font-sans shadow-2xs"
                     />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-normal text-stone-400">฿</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* 3.3 สินค้าหน้าร้าน / เพิ่มสินค้า (PRODUCT) - เอาออกมาเป็นช่องกรอกตัวเลขเลย จำนวนไม่ต้อง */}
-            <div className="bg-purple-50/50 border border-purple-200/80 rounded-2xl p-3.5 space-y-2.5">
+            <div className="bg-purple-50/50 border border-purple-200/80 rounded-xl p-2.5 sm:p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-purple-950 flex items-center gap-1.5">
-                  <ShoppingBag className="w-3.5 h-3.5 text-purple-600" />
+                <span className="text-xs font-semibold text-purple-950 flex items-center gap-1">
+                  <ShoppingBag className="w-3 h-3 text-purple-600" />
                   <span>สินค้าหน้าร้าน (Retail Products)</span>
                 </span>
                 <button
                   type="button"
                   onClick={handleAddProduct}
-                  className="text-[11px] font-bold text-purple-900 hover:text-purple-950 flex items-center gap-1 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-purple-300 shadow-2xs hover:bg-purple-50 active:scale-95"
+                  className="text-[10px] font-medium text-purple-900 hover:text-purple-950 flex items-center gap-1 cursor-pointer bg-white px-2 py-0.5 rounded-md border border-purple-300 shadow-2xs hover:bg-purple-50 active:scale-95"
                 >
-                  <Plus className="w-3.5 h-3.5 text-purple-700 stroke-[2.5]" />
+                  <Plus className="w-3 h-3 text-purple-700" />
                   <span>+ เพิ่มสินค้า</span>
                 </button>
               </div>
 
               {productItems.length === 0 ? (
-                <div className="text-xs text-stone-400 italic py-1 flex items-center justify-between">
+                <div className="text-[11px] text-stone-400 italic py-1 flex items-center justify-between">
                   <span>ยังไม่มีรายการสินค้าในบิลนี้</span>
                   <button
                     type="button"
                     onClick={handleAddProduct}
-                    className="text-purple-700 font-bold hover:underline cursor-pointer text-[11px]"
+                    className="text-purple-700 font-medium hover:underline cursor-pointer text-[10px]"
                   >
                     กดเพื่อเพิ่มสินค้าและกรอกราคา
                   </button>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {productItems.map((item) => {
                     const itemIdx = items.findIndex((it) => it.id === item.id);
                     return (
-                      <div key={item.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2.5 rounded-xl border border-purple-200/70 shadow-2xs">
+                      <div key={item.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 bg-white p-2 rounded-lg border border-purple-200/70 shadow-2xs">
                         <div className="flex-1">
                           <input
                             type="text"
                             value={item.name}
                             onChange={(e) => handleItemChange(itemIdx, 'name', e.target.value)}
                             placeholder="ระบุชื่อสินค้า เช่น แว็กซ์, เจล, แชมพู"
-                            className="w-full text-xs font-bold text-stone-900 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-purple-500 focus:outline-none py-1"
+                            className="w-full text-xs font-normal text-stone-800 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-purple-500 focus:outline-none py-0.5"
                           />
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <div className="space-y-0.5">
                             <select
                               value={item.barberId || ''}
                               onChange={(e) => handleItemChange(itemIdx, 'barberId', e.target.value)}
-                              className="bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-stone-800 focus:outline-none focus:border-purple-500 cursor-pointer shadow-2xs"
+                              className="bg-stone-50 border border-stone-200 rounded-lg px-2 py-1 text-xs font-normal text-stone-800 focus:outline-none focus:border-purple-500 cursor-pointer shadow-2xs"
                             >
                               {barbers.map((b) => (
                                 <option key={b.id} value={b.id}>
@@ -730,26 +730,26 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                             </select>
                           </div>
 
-                          <div className="relative w-32">
+                          <div className="relative w-28">
                             <input
                               type="number"
                               min="0"
                               step="1"
                               value={item.price === 0 ? '' : item.price}
                               onChange={(e) => handleItemChange(itemIdx, 'price', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
-                              placeholder="ระบุราคาสินค้า"
-                              className="w-full bg-stone-50 border border-purple-300 focus:border-purple-500 rounded-xl pl-3 pr-7 py-1.5 text-sm font-black text-right text-stone-900 focus:outline-none font-mono shadow-2xs"
+                              placeholder="0"
+                              className="w-full bg-white border border-stone-300 focus:border-purple-500 rounded-lg pl-2.5 pr-6 py-1 text-xs font-medium text-right text-stone-800 focus:outline-none font-sans shadow-2xs"
                             />
-                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-normal text-stone-400">฿</span>
                           </div>
 
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(itemIdx)}
-                            className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                            className="p-1 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
                             title="ลบสินค้านี้"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -822,24 +822,24 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
           </div>
 
           {/* 4. TIP ADJUSTMENT (SEPARATED FROM STORE SALES) */}
-          <div className="bg-pink-50/70 border border-pink-200/90 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-pink-500 text-white font-black flex items-center justify-center shadow-xs">
-                <Heart className="w-4 h-4 stroke-[2.5]" />
+          <div className="bg-pink-50/70 border border-pink-200/90 rounded-xl p-2.5 sm:p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-pink-500 text-white font-black flex items-center justify-center shadow-xs">
+                <Heart className="w-3 h-3 stroke-[2.5]" />
               </div>
               <div>
-                <span className="text-xs font-black text-pink-950 block">ค่าทิปช่าง (Barber Tip)</span>
-                <span className="text-[11px] text-pink-700 font-medium">
+                <span className="text-xs font-semibold text-pink-950 block">ค่าทิปช่าง (Barber Tip)</span>
+                <span className="text-[10px] text-pink-700 font-normal">
                   * ทิปมอบให้ช่างโดยตรง ไม่รวมกับยอดขายของร้าน
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
               <select
                 value={tipBarberId}
                 onChange={(e) => setTipBarberId(e.target.value)}
-                className="bg-white border border-pink-300 rounded-xl px-3 py-2 text-xs font-bold text-stone-800 focus:outline-none focus:border-pink-500 cursor-pointer shadow-2xs"
+                className="bg-white border border-pink-300 rounded-lg px-2 py-1 text-xs font-normal text-stone-800 focus:outline-none focus:border-pink-500 cursor-pointer shadow-2xs"
               >
                 {barbers.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -848,16 +848,16 @@ export const EditBillModal: React.FC<EditBillModalProps> = ({
                 ))}
               </select>
 
-              <div className="relative w-32">
+              <div className="relative w-28">
                 <input
                   type="number"
                   min="0"
                   value={tipAmount === 0 ? '' : tipAmount}
                   onChange={(e) => setTipAmount(e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0))}
-                  placeholder="ระบุยอดทิป"
-                  className="w-full bg-white border border-pink-300 rounded-xl pl-3 pr-7 py-2 text-xs sm:text-sm font-black text-right text-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-400 font-mono shadow-2xs"
+                  placeholder="0"
+                  className="w-full bg-white border border-pink-300 rounded-lg pl-2.5 pr-6 py-1 text-xs font-medium text-right text-pink-800 focus:outline-none focus:ring-1 focus:ring-pink-300 font-sans shadow-2xs"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">฿</span>
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-normal text-stone-400">฿</span>
               </div>
             </div>
           </div>

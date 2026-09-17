@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getFirestore, 
+  initializeFirestore,
   collection, 
   doc, 
   setDoc, 
@@ -30,10 +31,19 @@ import {
 // Initialize Firebase App
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore (with databaseId if specified in config)
-export const db: Firestore = (firebaseConfig as { firestoreDatabaseId?: string }).firestoreDatabaseId
-  ? getFirestore(app, (firebaseConfig as { firestoreDatabaseId?: string }).firestoreDatabaseId)
-  : getFirestore(app);
+// Initialize Firestore (with databaseId and experimentalForceLongPolling for robust iframe connectivity)
+const dbDatabaseId = (firebaseConfig as { firestoreDatabaseId?: string }).firestoreDatabaseId || undefined;
+
+let firestoreInstance: Firestore;
+try {
+  firestoreInstance = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+  }, dbDatabaseId);
+} catch {
+  firestoreInstance = dbDatabaseId ? getFirestore(app, dbDatabaseId) : getFirestore(app);
+}
+
+export const db: Firestore = firestoreInstance;
 
 // Helper to sanitize store email identifier for Firestore paths
 export function sanitizeStoreId(email: string): string {

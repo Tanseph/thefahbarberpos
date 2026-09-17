@@ -33,6 +33,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { formatCurrency } from '../../utils/formatters';
 import { BRAND_COLOR_PRESETS, DEFAULT_BRAND_COLOR, applyBrandTheme } from '../../utils/brandTheme';
+import { updateFavicon } from '../../utils/favicon';
 import { isSoundEnabled, setSoundEnabled, playClickSound, playSuccessSound } from '../../utils/sound';
 
 interface SettingsViewProps {
@@ -154,8 +155,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         const dataUrl = event.target?.result as string;
         const updated = { ...formData, logoUrl: dataUrl };
         setFormData(updated);
+        updateFavicon(dataUrl);
         onSaveSettings(updated);
-        showToast('อัพโหลดโลโก้ร้านสำเร็จ', 'บันทึกรูปภาพโลโก้ใหม่ลงระบบเรียบร้อยแล้ว', 'success', true);
+        showToast('อัพโหลดโลโก้ร้านสำเร็จ', 'บันทึกรูปภาพโลโก้ใหม่และเปลี่ยนไอคอนเว็บเรียบร้อยแล้ว', 'success', true);
       };
       reader.readAsDataURL(file);
     }
@@ -164,6 +166,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const handleRemoveLogo = () => {
     const updated = { ...formData, logoUrl: '' };
     setFormData(updated);
+    updateFavicon('');
     onSaveSettings(updated);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
